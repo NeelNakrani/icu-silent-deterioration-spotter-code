@@ -7,7 +7,6 @@ import type { PatientSummary } from './types/icu';
 
 const TWEAK_DEFAULTS = {
   "theme": "light",
-  "dashVariant": "cards",
   "agentVisual": "tinted",
   "density": "regular"
 };
@@ -52,8 +51,6 @@ export default function App() {
             <Dashboard
               patients={patients}
               onOpen={openPatient}
-              variant={t.dashVariant}
-              setVariant={(v: string) => setTweak("dashVariant", v)}
               density={t.density}
             />
           </div>
@@ -83,11 +80,6 @@ export default function App() {
         <TweakRadio label="Mode" value={t.theme}
           options={["light", "dark"]}
           onChange={(v) => setTweak("theme", v)} />
-
-        <TweakSection label="Dashboard layout" />
-        <TweakRadio label="Variant" value={t.dashVariant}
-          options={["table", "cards", "lanes"]}
-          onChange={(v) => setTweak("dashVariant", v)} />
 
         <TweakSection label="Detail · agent visual" />
         <TweakRadio label="Style" value={t.agentVisual}
