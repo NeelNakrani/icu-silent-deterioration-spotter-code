@@ -1,4 +1,4 @@
-import type { PatientSummary, PatientDetailData, VitalsUpdate } from '../types/icu';
+import type { PatientSummary, PatientDetailData, VitalsUpdate, TrendDirection } from '../types/icu';
 import type { 
   PatientListResponse, 
   PatientBriefResponse, 
@@ -49,7 +49,15 @@ function transformPatientListItem(item: BackendPatientListItem): PatientSummary 
     primary: 'Unknown', // Not provided by backend
     los: '0d', // Not provided by backend
     flags: [], // Not provided by backend
-    vitals: {
+    vitals: item.vitals ? {
+      hr: Math.round(item.vitals.hr),
+      sbp: Math.round(item.vitals.sbp),
+      dbp: Math.round(item.vitals.dbp),
+      map: Math.round(item.vitals.map),
+      rr: Math.round(item.vitals.rr),
+      spo2: Math.round(item.vitals.spo2),
+      temp: Math.round(item.vitals.temp * 10) / 10, // Keep 1 decimal for temp
+    } : {
       hr: 0,
       sbp: 0,
       dbp: 0,
@@ -65,6 +73,91 @@ function transformPatientListItem(item: BackendPatientListItem): PatientSummary 
       timebomb: 0,
     },
   };
+}
+
+/**
+ * Build vitalsSpark data from trend report
+ */
+function buildVitalsSparkFromTrends(trendReport: any): Record<string, any> {
+  const vitalsSpark: Record<string, any> = {};
+  
+  // Map vital names to spark keys
+  const vitalMap: Record<string, string> = {
+    'Heart Rate': 'hr',
+    'Respiratory Rate': 'rr',
+    'Non Invasive Blood Pressure systolic': 'map',
+    'O2 saturation pulseoxymetry': 'spo2',
+    'Temperature': 'temp',
+    'Lactate': 'lact',
+  };
+  
+  trendReport.trends?.forEach((trend: any) => {
+    const key = vitalMap[trend.vital_name];
+    if (key && trend.values && trend.values.length > 0) {
+      vitalsSpark[key] = {
+        values: trend.values,
+        unit: getUnitForVital(trend.vital_name),
+        current: trend.values[trend.values.length - 1],
+        range: getNormalRangeForVital(trend.vital_name),
+      };
+    }
+  });
+  
+  return vitalsSpark;
+}
+
+/**
+ * Build trend directions from trend report
+ */
+function buildTrendDirections(trendReport: any): Record<string, TrendDirection> {
+  const trends: Record<string, TrendDirection> = {};
+  
+  const vitalMap: Record<string, string> = {
+    'Heart Rate': 'hr',
+    'Respiratory Rate': 'rr',
+    'Non Invasive Blood Pressure systolic': 'sbp',
+    'O2 saturation pulseoxymetry': 'spo2',
+    'Temperature': 'temp',
+  };
+  
+  trendReport.trends?.forEach((trend: any) => {
+    const key = vitalMap[trend.vital_name];
+    if (key) {
+      trends[key] = trend.direction as TrendDirection;
+    }
+  });
+  
+  return trends;
+}
+
+/**
+ * Get unit for a vital sign
+ */
+function getUnitForVital(vitalName: string): string {
+  const units: Record<string, string> = {
+    'Heart Rate': 'bpm',
+    'Respiratory Rate': '/min',
+    'Non Invasive Blood Pressure systolic': 'mmHg',
+    'O2 saturation pulseoxymetry': '%',
+    'Temperature': '°C',
+    'Lactate': 'mmol/L',
+  };
+  return units[vitalName] || '';
+}
+
+/**
+ * Get normal range for a vital sign
+ */
+function getNormalRangeForVital(vitalName: string): string {
+  const ranges: Record<string, string> = {
+    'Heart Rate': '60-100',
+    'Respiratory Rate': '12-20',
+    'Non Invasive Blood Pressure systolic': '90-140',
+    'O2 saturation pulseoxymetry': '95-100',
+    'Temperature': '36.5-37.5',
+    'Lactate': '0.5-2.2',
+  };
+  return ranges[vitalName] || '';
 }
 
 /**
@@ -123,42 +216,94 @@ function transformPatientBrief(brief: PatientBriefResponse): PatientDetailData {
       spo2: 0,
       temp: 0,
     },
-    vitalsSpark: {},
-    trend: {},
+    // Build vitalsSpark from trend report data
+    vitalsSpark: brief.trend_report ? buildVitalsSparkFromTrends(brief.trend_report) : {},
+    trend: brief.trend_report ? buildTrendDirections(brief.trend_report) : {},
     agent_counts: {
-      trend: 0,
-      conflict: 0,
-      timebomb: 0,
+      trend: brief.trend_report?.trends?.length || 0,
+      conflict: brief.conflict_report?.conflicts?.length || 0,
+      timebomb: brief.timebomb_report?.timebombs?.length || 0,
     },
     
-    // Agent reports (parsed from summaries if available)
-    trend_report: {
+    // Agent reports (full nested objects from backend)
+    trend_report: brief.trend_report ? {
+      patient_id: brief.trend_report.patient_id,
+      timestamp: brief.trend_report.timestamp,
+      overall_concern: brief.trend_report.overall_concern,
+      summary: brief.trend_report.summary,
+      llm_reasoning: brief.trend_report.llm_reasoning,
+      last_run_label: lastUpdatedLabel,
+      confidence: brief.confidence_level,
+      trends: brief.trend_report.trends.map(t => ({
+        vital_name: t.vital_name,
+        direction: t.direction as TrendDirection,
+        slope: t.slope,
+        acceleration: t.acceleration,
+        concern_level: t.concern_level,
+        values: t.values,
+        timestamps: t.timestamps,
+        reasoning: t.reasoning,
+      })),
+      evidence: [],
+    } : {
       patient_id: brief.patient_id,
       timestamp: brief.timestamp,
       overall_concern: 0,
-      summary: brief.trend_summary || 'No trend analysis available',
-      llm_reasoning: brief.trend_summary || '',
+      summary: 'No trend analysis available',
+      llm_reasoning: '',
       last_run_label: lastUpdatedLabel,
       confidence: brief.confidence_level,
       trends: [],
       evidence: [],
     },
-    conflict_report: {
+    conflict_report: brief.conflict_report ? {
+      patient_id: brief.conflict_report.patient_id,
+      timestamp: brief.conflict_report.timestamp,
+      overall_severity: brief.conflict_report.overall_severity,
+      summary: brief.conflict_report.summary,
+      llm_reasoning: brief.conflict_report.llm_reasoning,
+      last_run_label: lastUpdatedLabel,
+      confidence: brief.confidence_level,
+      conflicts: brief.conflict_report.conflicts.map(c => ({
+        conflict_type: c.conflict_type,
+        severity: c.severity,
+        description: c.description,
+        vitals_involved: c.vitals_involved,
+        labs_involved: c.labs_involved,
+        evidence: Array.isArray(c.evidence) ? c.evidence : [],
+        clinical_significance: c.clinical_significance,
+      })),
+    } : {
       patient_id: brief.patient_id,
       timestamp: brief.timestamp,
       overall_severity: 0,
-      summary: brief.conflict_summary || 'No conflict analysis available',
-      llm_reasoning: brief.conflict_summary || '',
+      summary: 'No conflict analysis available',
+      llm_reasoning: '',
       last_run_label: lastUpdatedLabel,
       confidence: brief.confidence_level,
       conflicts: [],
     },
-    timebomb_report: {
+    timebomb_report: brief.timebomb_report ? {
+      patient_id: brief.timebomb_report.patient_id,
+      timestamp: brief.timebomb_report.timestamp,
+      overall_urgency: brief.timebomb_report.overall_urgency,
+      summary: brief.timebomb_report.summary,
+      llm_reasoning: '',
+      last_run_label: lastUpdatedLabel,
+      confidence: brief.confidence_level,
+      timebombs: brief.timebomb_report.timebombs.map(tb => ({
+        timebomb_type: tb.timebomb_type,
+        urgency: tb.urgency,
+        description: tb.description,
+        time_until_event: tb.time_until_event,
+        action_required: tb.action_required,
+      })),
+    } : {
       patient_id: brief.patient_id,
       timestamp: brief.timestamp,
       overall_urgency: 0,
-      summary: brief.timebomb_summary || 'No timebomb analysis available',
-      llm_reasoning: brief.timebomb_summary || '',
+      summary: 'No timebomb analysis available',
+      llm_reasoning: '',
       last_run_label: lastUpdatedLabel,
       confidence: brief.confidence_level,
       timebombs: [],
