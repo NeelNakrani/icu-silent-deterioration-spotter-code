@@ -79,6 +79,11 @@ function VitalsSparkPanel({ vitals }: { vitals: Record<string, VitalSpark> }) {
     { key: "lact", label: "Lactate",       tone: "red" },
     { key: "temp", label: "Temperature",   tone: "amber" },
   ];
+  
+  if (!vitals) {
+    return null;
+  }
+  
   return (
     <div style={{
       background: "var(--surface-1)", border: "1px solid var(--rule)",
@@ -91,6 +96,7 @@ function VitalsSparkPanel({ vitals }: { vitals: Record<string, VitalSpark> }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
         {rows.map((r) => {
           const v = vitals[r.key];
+          if (!v) return null;
           const color = r.tone === "red" ? "var(--risk-high-fg)" : "var(--risk-med-fg)";
           return (
             <div className="vitals-spark-row" key={r.key} style={{
@@ -101,12 +107,12 @@ function VitalsSparkPanel({ vitals }: { vitals: Record<string, VitalSpark> }) {
             }}>
               <div>
                 <div style={{ fontSize: 11, color: "var(--ink-2)", fontWeight: 500 }}>{r.label}</div>
-                <div style={{ fontSize: 9.5, color: "var(--ink-4)", fontFamily: "var(--mono)" }}>nl {v.range}</div>
+                <div style={{ fontSize: 9.5, color: "var(--ink-4)", fontFamily: "var(--mono)" }}>nl {v.range || '—'}</div>
               </div>
-              <Sparkline values={v.values} color={color} fill w={140} h={26} />
+              <Sparkline values={v.values || []} color={color} fill w={140} h={26} />
               <div style={{ textAlign: "right", fontFamily: "var(--mono)" }}>
-                <span style={{ fontSize: 14, color: "var(--ink-1)", fontWeight: 500 }}>{v.current}</span>
-                <span style={{ fontSize: 9.5, color: "var(--ink-3)", marginLeft: 3 }}>{v.unit}</span>
+                <span style={{ fontSize: 14, color: "var(--ink-1)", fontWeight: 500 }}>{v.current ?? '—'}</span>
+                <span style={{ fontSize: 9.5, color: "var(--ink-3)", marginLeft: 3 }}>{v.unit || ''}</span>
               </div>
             </div>
           );
