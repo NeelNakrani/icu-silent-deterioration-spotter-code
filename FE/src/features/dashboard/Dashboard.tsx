@@ -89,7 +89,6 @@ function Header({ unit, setUnit, refresh, density, variant, setVariant }: Header
 
       <div className="dashboard-actions" style={{ display: "flex", gap: 8 }}>
         <button style={btnGhost}>Filters</button>
-        <button style={btnPrimary}>+ Hand-off</button>
       </div>
     </header>
   );
