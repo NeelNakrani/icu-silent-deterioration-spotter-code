@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  /* Layout Colors */
+  --color-bg-main: #0b0f14;
+  --color-bg-panel: #11161c;
+  --color-bg-elevated: #161c23;
+
+  /* Brand & Accents */
+  --color-primary: #1f2933;
+  --color-primary-hover: #273444;
+  --color-accent: #334155;
+  --color-highlight: #94a3b8;
+
+  /* Typography */
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #9aa4af;
+  --color-text-muted: #6b7280;
+
+  /* Borders & Shadows */
+  --color-border-subtle: #1f2933;
+  --shadow-medical: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+
+  /* Status Colors (Critical for ICU apps) */
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-critical: #ef4444;
+}
+
+/* --- Base Styles --- */
+@layer base {
+  body {
+    @apply bg-bg-main text-text-primary antialiased;
+    font-family: "Inter", system-ui, sans-serif;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+  }
+
+  h1, h2, h3 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+/* --- Components --- */
+@layer components {
+  .sidebar {
+    @apply w-60 bg-bg-panel text-text-secondary border-r border-border-subtle flex flex-col transition-all;
+  }
+
+  .sidebar nav a {
+    @apply flex items-center px-4 py-3 transition-colors duration-200 border-l-2 border-transparent;
+    color: var(--color-text-secondary);
+  }
+
+  .sidebar nav a:hover {
+    @apply bg-bg-elevated text-text-primary border-accent;
+  }
+
+  .sidebar nav a.active {
+    @apply bg-accent/20 text-text-primary border-accent;
+  }
+
+  .main-inner {
+    @apply max-w-5xl w-full mx-auto bg-bg-panel rounded-xl p-6 border border-border-subtle shadow-medical self-center;
+  }
+
+  /* ICU Patient/Data Card */
+  .card {
+    @apply bg-bg-panel rounded-lg p-5 text-left border border-border-subtle transition-all duration-200;
+    border-left: 4px solid var(--color-accent);
+  }
+
+  .card:hover {
+    @apply bg-bg-elevated -translate-y-0.5 shadow-lg;
+  }
+
+  .card h3 { @apply text-sm uppercase tracking-wider text-text-secondary mb-1; }
+  .card p { @apply text-xl font-medium text-text-primary; }
+
+  /* Status Indicators */
+  .status-pill {
+    @apply px-2 py-1 rounded-full text-xs font-bold uppercase;
+  }
+}
+
+/* --- Utilities & Specific Fixes --- */
+.status-pending  { color: var(--color-warning); }
+.status-approved { color: var(--color-success); }
+.status-rejected { color: var(--color-critical); }
+
+button {
+  @apply px-4 py-2 rounded-md font-medium transition-all active:scale-95 cursor-pointer;
+  background: var(--color-accent);
+  color: var(--color-text-primary);
+}
+
+button:hover {
+  @apply brightness-125 shadow-md;
+}
