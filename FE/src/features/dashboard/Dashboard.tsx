@@ -87,10 +87,6 @@ function Header({ unit, setUnit, refresh, density, variant, setVariant }: Header
         ))}
       </div>
 
-      <div className="dashboard-actions" style={{ display: "flex", gap: 8 }}>
-        <button style={btnGhost}>Filters</button>
-        <button style={btnPrimary}>+ Hand-off</button>
-      </div>
     </header>
   );
 }
@@ -135,7 +131,7 @@ function PatientTable({ patients, onOpen }: SubComponentProps) {
             <th style={th}>Risk</th>
             <th style={th}>Bed</th>
             <th style={th}>Patient</th>
-            <th style={th}>Primary</th>
+            {/* <th style={th}>Primary</th> */}
             <th style={th}>Active flags</th>
             <th style={th}>HR</th>
             <th style={th}>MAP</th>
@@ -166,7 +162,7 @@ function PatientTable({ patients, onOpen }: SubComponentProps) {
                   </span>
                 </div>
               </td>
-              <td style={{ ...td, color: "var(--ink-2)" }}>{p.primary}</td>
+              {/* <td style={{ ...td, color: "var(--ink-2)" }}>{p.primary}</td> */}
               <td style={td}>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                   {p.flags.length === 0
@@ -218,7 +214,7 @@ function PatientCards({ patients, onOpen }: SubComponentProps) {
             <div>
               <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>{p.careunit_short} · {p.age}{p.gender}</div>
               <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, fontFamily: "var(--mono)" }}>subject_id {p.patient_id}</div>
-              <div style={{ fontSize: 11, color: "var(--ink-2)", marginTop: 1 }}>{p.primary}</div>
+              {/* <div style={{ fontSize: 11, color: "var(--ink-2)", marginTop: 1 }}>{p.primary}</div> */}
             </div>
             <RiskPill risk_level={p.risk_level} score={p.risk_score} delta={p.risk_delta} />
           </div>
@@ -293,7 +289,7 @@ function PatientLanes({ patients, onOpen }: SubComponentProps) {
                   <div style={{ fontSize: 10.5, color: "var(--ink-3)", fontFamily: "var(--mono)", margin: "2px 0 6px" }}>
                     {p.careunit_short} · {p.age}{p.gender} · {p.los}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--ink-2)", marginBottom: 8 }}>{p.primary}</div>
+                  {/* <div style={{ fontSize: 11, color: "var(--ink-2)", marginBottom: 8 }}>{p.primary}</div> */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
                     {p.flags.slice(0, 3).map((f, i) => (
                       <Chip key={i} tone={flagTone(f)} dot={flagTone(f) !== "neutral"}>{f}</Chip>
@@ -370,15 +366,27 @@ interface DashboardProps {
 }
 
 function Dashboard({ patients, onOpen, variant, setVariant, density }: DashboardProps) {
-  const [unit, setUnit] = React.useState("MICU");
+  const [unit, setUnit] = React.useState("All Units");
+  
+  // Filter patients based on selected unit
+  const filteredPatients = React.useMemo(() => {
+    if (unit === "All Units") return patients;
+    
+    // Match unit filter with careunit_short (e.g., "MICU", "SICU")
+    return patients.filter(p => {
+      const unitShort = p.careunit_short?.toUpperCase() || '';
+      return unitShort.includes(unit.toUpperCase());
+    });
+  }, [patients, unit]);
+  
   return (
     <div className="dashboard-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--surface-0)" }}>
-      <Header unit={unit} setUnit={setUnit} refresh={true} density={density} variant={variant} setVariant={setVariant} total={patients.length} />
-      <StatStrip patients={patients} />
+      <Header unit={unit} setUnit={setUnit} refresh={true} density={density} variant={variant} setVariant={setVariant} total={filteredPatients.length} />
+      <StatStrip patients={filteredPatients} />
       <div style={{ flex: 1, overflow: "auto" }}>
-        {variant === "table" && <PatientTable patients={patients} onOpen={onOpen} />}
-        {variant === "cards" && <PatientCards patients={patients} onOpen={onOpen} />}
-        {variant === "lanes" && <PatientLanes patients={patients} onOpen={onOpen} />}
+        {variant === "table" && <PatientTable patients={filteredPatients} onOpen={onOpen} />}
+        {variant === "cards" && <PatientCards patients={filteredPatients} onOpen={onOpen} />}
+        {variant === "lanes" && <PatientLanes patients={filteredPatients} onOpen={onOpen} />}
       </div>
     </div>
   );
