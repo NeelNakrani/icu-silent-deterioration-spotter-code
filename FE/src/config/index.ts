@@ -1,6 +1,6 @@
 // Application configuration
 export const config = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   appName: import.meta.env.VITE_APP_NAME || 'ICU Silent Deterioration Spotter',
   appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
   enableAnalytics: import.meta.env.VITE_ENABLE_ANALYTICS === 'true',
