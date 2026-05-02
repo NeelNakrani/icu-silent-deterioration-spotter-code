@@ -33,7 +33,7 @@ class DataEmitter:
     
     def __init__(
         self,
-        data_path: str = "BE/data/raw_data/master_multi_patient_timeline.csv",
+        data_path: Optional[str] = None,
         speed_multiplier: float = 1.0,
         loop_data: bool = False
     ):
@@ -41,10 +41,14 @@ class DataEmitter:
         Initialize the data emitter.
         
         Args:
-            data_path: Path to the master CSV file
+            data_path: Path to the master CSV file (defaults to data/raw_data/master_multi_patient_timeline.csv)
             speed_multiplier: Speed up/slow down time (1.0 = real-time, 2.0 = 2x speed)
             loop_data: Whether to loop the data when reaching the end
         """
+        if data_path is None:
+            # Default to path relative to this module
+            module_dir = Path(__file__).parent
+            data_path = module_dir / "data" / "raw_data" / "master_multi_patient_timeline.csv"
         self.data_path = Path(data_path)
         self.speed_multiplier = speed_multiplier
         self.loop_data = loop_data

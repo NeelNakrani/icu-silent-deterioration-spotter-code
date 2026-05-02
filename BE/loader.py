@@ -82,13 +82,17 @@ class DataLoader:
     Loads and processes MIMIC-IV data into PatientDataObject instances.
     """
     
-    def __init__(self, data_path: str = "BE/data/raw_data/master_multi_patient_timeline.csv"):
+    def __init__(self, data_path: Optional[str] = None):
         """
         Initialize the data loader.
         
         Args:
-            data_path: Path to the master CSV file
+            data_path: Path to the master CSV file (defaults to data/raw_data/master_multi_patient_timeline.csv)
         """
+        if data_path is None:
+            # Default to path relative to this module
+            module_dir = Path(__file__).parent
+            data_path = str(module_dir / "data" / "raw_data" / "master_multi_patient_timeline.csv")
         self.data_path = Path(data_path)
         self.df: Optional[pd.DataFrame] = None
         

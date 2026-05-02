@@ -13,6 +13,8 @@ import asyncio
 import logging
 from datetime import datetime
 
+import pytest
+
 from emitter import DataEmitter
 from loader import DataLoader, create_pdo_from_emitter_data
 from schemas import PatientDataObject
@@ -25,6 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.asyncio
 async def test_emitter_basic():
     """Test basic emitter functionality."""
     logger.info("=" * 60)
@@ -49,6 +52,7 @@ async def test_emitter_basic():
     return patients
 
 
+@pytest.mark.asyncio
 async def test_loader_basic():
     """Test basic loader functionality."""
     logger.info("\n" + "=" * 60)
@@ -68,6 +72,7 @@ async def test_loader_basic():
     return patients
 
 
+@pytest.mark.asyncio
 async def test_emitter_snapshot():
     """Test emitter snapshot functionality."""
     logger.info("\n" + "=" * 60)
@@ -94,6 +99,7 @@ async def test_emitter_snapshot():
     return snapshot
 
 
+@pytest.mark.asyncio
 async def test_pdo_creation():
     """Test PatientDataObject creation from emitter data."""
     logger.info("\n" + "=" * 60)
@@ -132,6 +138,7 @@ async def test_pdo_creation():
     return pdo
 
 
+@pytest.mark.asyncio
 async def test_resampling():
     """Test data resampling functionality."""
     logger.info("\n" + "=" * 60)
@@ -166,6 +173,7 @@ async def test_resampling():
     return resampled_pdo
 
 
+@pytest.mark.asyncio
 async def test_streaming():
     """Test streaming data emission."""
     logger.info("\n" + "=" * 60)
@@ -198,6 +206,7 @@ async def test_streaming():
             break
 
 
+@pytest.mark.asyncio
 async def test_all_patients_batch():
     """Test batch processing of all patients."""
     logger.info("\n" + "=" * 60)
