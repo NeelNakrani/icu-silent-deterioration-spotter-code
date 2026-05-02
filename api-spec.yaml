@@ -1,0 +1,633 @@
+openapi: 3.0.3
+
+info:
+  title: ICU Silent Deterioration Spotter API
+  description: |
+    REST API powering the ICU Silent Deterioration Spotter dashboard.
+    The backend runs three parallel agents (Trend, Lab-Vitals Conflict, Time Bomb)
+    per patient, synthesises results via a Coordinator LLM call, and exposes
+    structured `SBARBrief` objects to the frontend.
+  version: 0.1.0
+  contact:
+    name: ICU Spotter Team (IBM Bob Hackathon 2026)
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (FastAPI default)
+
+tags:
+  - name: Patients
+    description: Patient risk list and individual SBAR+ briefs
+  - name: System
+    description: Health and readiness checks
+
+paths:
+
+  /health:
+    get:
+      operationId: healthCheck
+      tags: [System]
+      summary: Health check
+      description: Returns 200 when the API is up and all internal dependencies are reachable.
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /patients:
+    get:
+      operationId: listPatients
+      tags: [Patients]
+      summary: List all patients ranked by risk
+      description: |
+        Returns a lightweight summary for every active ICU patient, sorted by
+        risk severity (red → yellow → green). Used to render the patient list
+        screen. Auto-refresh interval recommended: 60 s.
+      responses:
+        "200":
+          description: Sorted patient summary list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientListResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /patients/{patient_id}/brief:
+    get:
+      operationId: getPatientBrief
+      tags: [Patients]
+      summary: Full SBAR+ brief for a single patient
+      description: |
+        Returns the most recently computed `SBARBrief` for the given patient,
+        including full agent sub-reports (trend, conflict, time-bomb) and any
+        data-quality warnings.
+      parameters:
+        - $ref: "#/components/parameters/PatientId"
+      responses:
+        "200":
+          description: Full SBAR+ brief
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SBARBrief"
+        "404":
+          description: Patient not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /patients/{patient_id}/refresh:
+    post:
+      operationId: refreshPatientBrief
+      tags: [Patients]
+      summary: Re-run all agents for a patient and update the brief
+      description: |
+        Triggers a fresh pipeline run for the patient: re-ingests the latest
+        MIMIC-IV data window, runs all three agents concurrently, and regenerates
+        the SBAR+ brief via the Coordinator LLM call.
+        Returns the newly computed brief synchronously (may take a few seconds).
+      parameters:
+        - $ref: "#/components/parameters/PatientId"
+      responses:
+        "200":
+          description: Freshly computed SBAR+ brief
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SBARBrief"
+        "404":
+          description: Patient not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error (includes partial agent failures)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+
+  parameters:
+    PatientId:
+      name: patient_id
+      in: path
+      required: true
+      description: MIMIC-IV `subject_id` string
+      schema:
+        type: string
+        example: "10006"
+
+  schemas:
+
+    # -------------------------------------------------------------------------
+    # Utility / meta schemas
+    # -------------------------------------------------------------------------
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+      properties:
+        status:
+          type: string
+          description: Health status of the service
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server timestamp
+          example: "2026-05-02T02:00:00.000Z"
+        version:
+          type: string
+          description: API version
+          example: "1.0.0"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "NotFoundError"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Patient with ID 10006 not found"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+
+    # -------------------------------------------------------------------------
+    # Patient list
+    # -------------------------------------------------------------------------
+
+    PatientSummary:
+      type: object
+      required:
+        - patient_id
+        - stay_id
+        - risk_level
+        - risk_score
+        - last_updated
+        - careunit
+        - age
+        - gender
+      properties:
+        patient_id:
+          type: string
+          description: MIMIC-IV subject_id
+          example: "10006"
+        stay_id:
+          type: string
+          description: ICU stay identifier
+          example: "30019"
+        risk_level:
+          type: string
+          enum: [green, yellow, red]
+          description: Risk classification (green=stable, yellow=watch, red=critical)
+          example: "yellow"
+        risk_emoji:
+          type: string
+          description: Visual risk indicator
+          example: "🟡"
+        risk_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Numerical risk score (0-100)
+          example: 65.5
+        last_updated:
+          type: string
+          format: date-time
+          description: Timestamp of last risk assessment
+          example: "2026-05-02T01:45:00.000Z"
+        careunit:
+          type: string
+          description: Current care unit
+          example: "Medical Intensive Care Unit (MICU)"
+        age:
+          type: integer
+          description: Patient age in years
+          example: 67
+        gender:
+          type: string
+          description: Patient gender
+          example: "M"
+
+    PatientListResponse:
+      type: object
+      required:
+        - patients
+        - total_count
+        - timestamp
+      properties:
+        patients:
+          type: array
+          description: List of patients sorted by risk (red → yellow → green)
+          items:
+            $ref: "#/components/schemas/PatientSummary"
+        total_count:
+          type: integer
+          description: Total number of patients
+          example: 12
+        timestamp:
+          type: string
+          format: date-time
+          description: Response generation timestamp
+          example: "2026-05-02T02:00:00.000Z"
+
+    # -------------------------------------------------------------------------
+    # Data quality and metadata
+    # -------------------------------------------------------------------------
+
+    DataQuality:
+      type: object
+      required:
+        - total_expected_readings
+        - actual_readings
+        - completeness_score
+      properties:
+        total_expected_readings:
+          type: integer
+          description: Expected number of readings for the time window
+          example: 48
+        actual_readings:
+          type: integer
+          description: Actual number of readings received
+          example: 42
+        missing_vitals:
+          type: array
+          items:
+            type: string
+          description: List of vital signs with no data
+          example: ["Temperature"]
+        missing_labs:
+          type: array
+          items:
+            type: string
+          description: List of lab values with no data
+          example: []
+        data_gaps_minutes:
+          type: array
+          items:
+            type: integer
+          description: Time gaps larger than 1 hour (in minutes)
+          example: [75, 90]
+        completeness_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Data completeness score (0-1)
+          example: 0.875
+
+    # -------------------------------------------------------------------------
+    # Layer 1 Agent Outputs
+    # -------------------------------------------------------------------------
+
+    VitalTrend:
+      type: object
+      required:
+        - vital_name
+        - direction
+        - slope
+        - acceleration
+        - concern_level
+      properties:
+        vital_name:
+          type: string
+          description: Name of the vital sign
+          example: "Heart Rate"
+        direction:
+          type: string
+          enum: [rising, falling, stable, volatile]
+          description: Trend direction
+          example: "rising"
+        slope:
+          type: number
+          format: float
+          description: Rate of change per hour
+          example: 2.5
+        acceleration:
+          type: number
+          format: float
+          description: Change in slope (early vs late window)
+          example: 0.8
+        concern_level:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Concern level (0=none, 1=mild, 2=moderate, 3=severe)
+          example: 2
+        values:
+          type: array
+          items:
+            type: number
+          description: Vital sign values in the window
+          example: [85, 88, 92, 95, 98]
+        timestamps:
+          type: array
+          items:
+            type: string
+            format: date-time
+          description: Timestamps for each value
+        reasoning:
+          type: string
+          description: LLM reasoning for this trend
+          example: "Heart rate showing steady upward trend, suggesting increasing physiological stress"
+
+    TrendReport:
+      type: object
+      required:
+        - patient_id
+        - timestamp
+        - trends
+        - overall_concern
+        - summary
+      properties:
+        patient_id:
+          type: string
+          example: "10006"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-05-02T02:00:00.000Z"
+        trends:
+          type: array
+          items:
+            $ref: "#/components/schemas/VitalTrend"
+        overall_concern:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Overall concern level across all trends
+          example: 2
+        summary:
+          type: string
+          description: Brief summary of trend analysis
+          example: "Multiple concerning upward trends in HR and RR"
+        llm_reasoning:
+          type: string
+          description: Detailed LLM reasoning
+          example: "Patient showing signs of compensatory mechanisms..."
+
+    ConflictPattern:
+      type: object
+      required:
+        - conflict_type
+        - severity
+        - description
+      properties:
+        conflict_type:
+          type: string
+          enum: [compensated_shock, early_aki, pre_respiratory_failure, hidden_sepsis]
+          description: Type of cross-signal conflict detected
+          example: "compensated_shock"
+        severity:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Severity level (0-3)
+          example: 2
+        description:
+          type: string
+          description: Description of the conflict pattern
+          example: "Normal BP with elevated HR and rising lactate"
+        vitals_involved:
+          type: array
+          items:
+            type: string
+          description: Vital signs involved in the conflict
+          example: ["Heart Rate", "Blood Pressure"]
+        labs_involved:
+          type: array
+          items:
+            type: string
+          description: Lab values involved in the conflict
+          example: ["Lactate"]
+        evidence:
+          type: object
+          description: Supporting evidence for the conflict
+          additionalProperties: true
+        clinical_significance:
+          type: string
+          description: Clinical interpretation
+          example: "Suggests early compensated shock requiring intervention"
+
+    ConflictReport:
+      type: object
+      required:
+        - patient_id
+        - timestamp
+        - conflicts
+        - overall_severity
+        - summary
+      properties:
+        patient_id:
+          type: string
+          example: "10006"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-05-02T02:00:00.000Z"
+        conflicts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConflictPattern"
+        overall_severity:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Overall severity across all conflicts
+          example: 2
+        summary:
+          type: string
+          description: Brief summary of conflicts
+          example: "Detected compensated shock pattern"
+        llm_reasoning:
+          type: string
+          description: Detailed LLM reasoning
+          example: "Cross-signal analysis reveals..."
+
+    TimeBombItem:
+      type: object
+      required:
+        - timebomb_type
+        - urgency
+        - description
+      properties:
+        timebomb_type:
+          type: string
+          enum: [pending_lab, medication_due, prn_gap, missing_order]
+          description: Type of time bomb risk
+          example: "pending_lab"
+        urgency:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Urgency level (0=low, 3=critical)
+          example: 2
+        description:
+          type: string
+          description: Description of the time bomb
+          example: "Critical lactate pending for 45 minutes"
+        time_until_event:
+          type: integer
+          nullable: true
+          description: Minutes until the event (if applicable)
+          example: 15
+        action_required:
+          type: string
+          description: Recommended action
+          example: "Follow up on pending lactate result immediately"
+
+    TimeBombReport:
+      type: object
+      required:
+        - patient_id
+        - timestamp
+        - timebombs
+        - overall_urgency
+        - summary
+      properties:
+        patient_id:
+          type: string
+          example: "10006"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-05-02T02:00:00.000Z"
+        timebombs:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeBombItem"
+        overall_urgency:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Overall urgency across all time bombs
+          example: 2
+        summary:
+          type: string
+          description: Brief summary of time bombs
+          example: "2 pending labs requiring attention"
+
+    # -------------------------------------------------------------------------
+    # Coordinator output — SBARBrief (top-level response object)
+    # -------------------------------------------------------------------------
+
+    SBARBrief:
+      type: object
+      required:
+        - patient_id
+        - stay_id
+        - timestamp
+        - risk_level
+        - risk_score
+        - situation
+        - background
+        - assessment
+        - recommendation
+      properties:
+        patient_id:
+          type: string
+          description: MIMIC-IV subject_id
+          example: "10006"
+        stay_id:
+          type: string
+          description: ICU stay identifier
+          example: "30019"
+        timestamp:
+          type: string
+          format: date-time
+          description: When this brief was generated
+          example: "2026-05-02T02:00:00.000Z"
+        risk_level:
+          type: string
+          enum: [green, yellow, red]
+          description: Overall risk classification
+          example: "yellow"
+        risk_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Numerical risk score (0-100)
+          example: 65.5
+        situation:
+          type: string
+          description: Current clinical state (SBAR - Situation)
+          example: "67-year-old male in MICU with rising heart rate and lactate"
+        background:
+          type: string
+          description: Relevant clinical history (SBAR - Background)
+          example: "Post-operative day 2 following cardiac surgery, previously stable"
+        assessment:
+          type: string
+          description: Clinical interpretation (SBAR - Assessment)
+          example: "Concerning pattern suggesting early compensated shock"
+        recommendation:
+          type: string
+          description: Suggested clinical actions (SBAR - Recommendation)
+          example: "Consider fluid bolus, repeat lactate in 1 hour, notify attending"
+        trend_report:
+          $ref: "#/components/schemas/TrendReport"
+          nullable: true
+          description: Detailed trend analysis from Trend Agent
+        conflict_report:
+          $ref: "#/components/schemas/ConflictReport"
+          nullable: true
+          description: Cross-signal conflict analysis from Conflict Agent
+        timebomb_report:
+          $ref: "#/components/schemas/TimeBombReport"
+          nullable: true
+          description: Forward-looking risk analysis from Time Bomb Agent
+        data_quality_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Data completeness score (0-1)
+          example: 0.875
+        confidence_level:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Confidence in the assessment (0-1)
+          example: 0.85
+        generated_by:
+          type: string
+          description: System identifier
+          example: "Bob Agent System"
