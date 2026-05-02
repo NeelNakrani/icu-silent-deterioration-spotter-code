@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PatientSummary, RiskLevel } from '../../types/icu';
-import { RiskPill, Chip, TrendArrow, VitalCell, AgentBadge } from '../../components';
+import { RiskPill, Chip, VitalCell, AgentBadge } from '../../components';
 
 // Screen 1: Patient List Dashboard
 // 3 layout variants over PatientSummary[] (api-spec).
@@ -76,10 +76,6 @@ function Header({ unit, setUnit, refresh, density }: HeaderProps) {
 const btnGhost: React.CSSProperties = {
   padding: "5px 11px", border: "1px solid var(--rule)", background: "var(--surface-1)",
   color: "var(--ink-2)", borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
-};
-const btnPrimary: React.CSSProperties = {
-  padding: "5px 11px", border: 0, background: "var(--ink-1)",
-  color: "var(--surface-1)", borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
 };
 
 const flagTone = (f: string): "red" | "amber" | "neutral" =>
@@ -202,64 +198,61 @@ function PatientCards({ patients, onOpen }: SubComponentProps) {
                 ))}
           </div>
 
-      <div className="patient-card-vitals" style={{ 
-  display: "flex", 
-  alignItems: "center", // Align everything to the center vertically
-  gap: 14, 
-  paddingTop: 10, 
-  borderTop: "1px dashed var(--rule)" 
-}}>
-  {/* Vitals Section */}
-  <VitalCell label="HR" value={p.vitals.hr} unit="bpm" direction={p.trend.hr} />
-  <VitalCell label="MAP" value={p.vitals.map} unit="mmHg" direction={p.trend.map} />
-  <VitalCell label="SpO₂" value={p.vitals.spo2} unit="%" direction={p.trend.spo2} />
-  <VitalCell label="RR" value={p.vitals.rr} unit="/m" />
+          <div className="patient-card-vitals" style={{ 
+            display: "flex", 
+            alignItems: "center",
+            gap: 14, 
+            paddingTop: 10, 
+            borderTop: "1px dashed var(--rule)" 
+          }}>
+            {/* Vitals Section */}
+            <VitalCell label="HR" value={p.vitals.hr} unit="bpm" direction={p.trend.hr} />
+            <VitalCell label="MAP" value={p.vitals.map} unit="mmHg" direction={p.trend.map} />
+            <VitalCell label="SpO₂" value={p.vitals.spo2} unit="%" direction={p.trend.spo2} />
+            <VitalCell label="RR" value={p.vitals.rr} unit="/m" />
 
-  {/* Spacer to push metadata to the right */}
-  <div style={{ flex: 1 }} />
+            {/* Spacer to push metadata to the right */}
+            <div style={{ flex: 1 }} />
 
-  {/* Metadata Group: Badges and Timestamp */}
-  <div style={{ 
-    display: "flex", 
-    flexDirection: "column", 
-    alignItems: "flex-end", 
-    gap: 4 
-  }}>
-    {/* Agent Badges */}
-    <div style={{ display: "flex", gap: 4 }}>
-      <AgentBadge kind="trend" count={p.agent_counts.trend} />
-      <AgentBadge kind="conflict" count={p.agent_counts.conflict} />
-      <AgentBadge kind="timebomb" count={p.agent_counts.timebomb} />
-    </div>
+            {/* Metadata Group: Badges and Timestamp */}
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "flex-end", 
+              gap: 4 
+            }}>
+              {/* Agent Badges */}
+              <div style={{ display: "flex", gap: 4 }}>
+                <AgentBadge kind="trend" count={p.agent_counts.trend} />
+                <AgentBadge kind="conflict" count={p.agent_counts.conflict} />
+                <AgentBadge kind="timebomb" count={p.agent_counts.timebomb} />
+              </div>
 
-    {/* Timestamp Group */}
-    <div style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
-      <span style={{ 
-        fontSize: 9, 
-        color: "var(--ink-4)", 
-        textTransform: "uppercase", 
-        letterSpacing: ".06em" 
-      }}>
-        Updated
-      </span>
-      <span style={{ 
-        fontFamily: "var(--mono)", 
-        fontSize: 10, 
-        color: "var(--ink-3)" 
-      }}>
-        {p.last_updated_label}
-      </span>
-    </div>
-  </div>
-</div>
-
+              {/* Timestamp Group */}
+              <div style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                <span style={{ 
+                  fontSize: 9, 
+                  color: "var(--ink-4)", 
+                  textTransform: "uppercase", 
+                  letterSpacing: ".06em" 
+                }}>
+                  Updated
+                </span>
+                <span style={{ 
+                  fontFamily: "var(--mono)", 
+                  fontSize: 10, 
+                  color: "var(--ink-3)" 
+                }}>
+                  {p.last_updated_label}
+                </span>
+              </div>
+            </div>
+          </div>
         </button>
       ))}
     </div>
   );
 }
-
-
 
 interface StatStripProps {
   patients: PatientSummary[];
@@ -353,7 +346,6 @@ function StatStrip({ patients, riskFilter, onRiskFilterChange }: StatStripProps)
   );
 }
 
-
 interface DashboardProps {
   patients: PatientSummary[];
   onOpen: (patient: PatientSummary) => void;
@@ -417,4 +409,7 @@ function Dashboard({ patients, onOpen, density }: DashboardProps) {
     </div>
   );
 }
+
 export default Dashboard;
+
+// Made with Bob
