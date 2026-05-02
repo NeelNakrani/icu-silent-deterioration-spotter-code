@@ -46,8 +46,8 @@ export function ReasoningStream({
           className="reasoning-chunk animate-in fade-in slide-in-from-left duration-300"
           style={{ animationDelay: `${index * 50}ms` }}
         >
-          <div className="flex items-start gap-2">
-            <span className="text-xs text-text-muted font-mono mt-0.5 flex-shrink-0">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+            <span className="text-xs text-text-muted font-mono mt-0.5 shrink-0">
               {new Date().toLocaleTimeString('en-US', { 
                 hour12: false, 
                 hour: '2-digit', 
@@ -55,7 +55,7 @@ export function ReasoningStream({
                 second: '2-digit'
               })}
             </span>
-            <span className="text-sm font-mono leading-relaxed text-text-primary flex-1">
+            <span className="text-sm font-mono leading-relaxed text-text-primary flex-1 wrap-break-words">
               {chunk}
             </span>
           </div>

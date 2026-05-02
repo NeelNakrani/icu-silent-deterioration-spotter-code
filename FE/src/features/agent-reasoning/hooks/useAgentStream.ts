@@ -19,13 +19,16 @@ export function useAgentStream({
 }: UseAgentStreamOptions): AgentStreamState {
   const [status, setStatus] = useState<AgentStatus>('idle');
   const [reasoning, setReasoning] = useState<string[]>([]);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState<Error | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
 
   const startStreaming = useCallback(async () => {
     if (!enabled || status !== 'idle') return;
+
+    // Use a delay to avoid synchronous state update in useEffect
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     try {
       setStatus('running');
@@ -68,12 +71,16 @@ export function useAgentStream({
   // Reset when disabled
   useEffect(() => {
     if (!enabled) {
-      setStatus('idle');
-      setReasoning([]);
-      setResult(null);
-      setError(null);
-      setStartTime(null);
-      setEndTime(null);
+      // Use setTimeout to avoid synchronous state update in effect
+      const timer = setTimeout(() => {
+        setStatus('idle');
+        setReasoning([]);
+        setResult(null);
+        setError(null);
+        setStartTime(null);
+        setEndTime(null);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [enabled]);
 

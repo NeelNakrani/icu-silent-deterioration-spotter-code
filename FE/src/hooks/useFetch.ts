@@ -10,7 +10,7 @@ interface UseFetchState<T> {
 
 export function useFetch<T>(
   fetchFn: () => Promise<ApiResponse<T>>,
-  dependencies: any[] = []
+  dependencies: unknown[] = []
 ) {
   const [state, setState] = useState<UseFetchState<T>>({
     data: null,
@@ -41,6 +41,7 @@ export function useFetch<T>(
     return () => {
       isMounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
   return state;

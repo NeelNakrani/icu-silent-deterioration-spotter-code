@@ -1,4 +1,7 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 type RiskLevel = "RED" | "YELLOW" | "GREEN";
 
@@ -12,7 +15,7 @@ interface Patient {
 }
 
 export default function Sidebar() {
-  const [selectedId, setSelectedId] = useState<string | null>("101");
+  const [selectedId, setSelectedId] = useState<string | null>("P-101");
   const [loading] = useState(false);
 
   const [patients] = useState<Patient[]>([
@@ -28,95 +31,105 @@ export default function Sidebar() {
   }, [patients]);
 
   return (
-    <aside className="w-80 bg-bg-panel border-r border-border-subtle flex flex-col h-screen shrink-0 shadow-2xl">
-      {/* HEADER: Focus on System Integrity */}
+    <aside className="hidden lg:flex w-80 bg-bg-panel border-r border-border-subtle flex-col h-screen shrink-0">
       <div className="p-6 pb-4">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="font-bold text-xs tracking-[0.2em] text-text-secondary uppercase">
-            Unit: ICU-North
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-[11px] font-semibold tracking-[0.3em] text-text-secondary uppercase">
+            Unit North
           </h2>
-          <div className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-success"></span>
-            <span className="text-[10px] font-bold text-success uppercase">Live</span>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-success"></span>
+            <span className="text-[10px] font-semibold text-success uppercase">Live</span>
           </div>
         </div>
-        <h1 className="text-xl font-black text-text-primary tracking-tight">
-          COHORT <span className="text-text-muted font-light">ANALYSIS</span>
+        <h1 className="text-lg font-semibold text-text-primary tracking-tight">
+          Cohort Overview
         </h1>
+        <p className="text-xs text-text-muted mt-1">
+          Sorted by risk, newest updates first.
+        </p>
       </div>
 
-      {/* FILTER TABS: Quick triage */}
-      <div className="flex px-6 gap-4 border-b border-border-subtle pb-4">
-         <button className="text-[10px] font-bold text-accent border-b border-accent pb-1">ALL ({patients.length})</button>
-         <button className="text-[10px] font-bold text-text-muted hover:text-critical transition-colors">CRITICAL (2)</button>
+      <div className="px-6 pb-4">
+        <ButtonGroup className="bg-bg-main/40 rounded-md p-1">
+          <Button size="xs" variant="secondary" className="text-[11px]">
+            All ({patients.length})
+          </Button>
+          <Button size="xs" variant="ghost" className="text-[11px] text-text-muted hover:text-text-primary">
+            Critical (2)
+          </Button>
+        </ButtonGroup>
       </div>
 
       {/* PATIENT LIST */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3 custom-scrollbar">
         {loading ? (
            /* Loading State */
-           <div className="space-y-3 px-3">
+           <div className="space-y-3">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-20 bg-bg-elevated/50 animate-pulse rounded-xl" />
+                <div key={i} className="h-20 bg-bg-elevated/60 animate-pulse rounded-xl" />
               ))}
            </div>
         ) : (
           sortedPatients.map((patient) => {
             const isSelected = selectedId === patient.id;
             const riskColors = {
-              RED: "border-l-critical bg-critical/5 text-critical",
-              YELLOW: "border-l-warning bg-warning/5 text-warning",
-              GREEN: "border-l-success bg-success/5 text-success",
+              RED: "border-l-critical",
+              YELLOW: "border-l-warning",
+              GREEN: "border-l-success",
+            };
+            const riskBadgeStyles = {
+              RED: "bg-critical/15 text-critical",
+              YELLOW: "bg-warning/15 text-warning",
+              GREEN: "bg-success/15 text-success",
             };
 
             return (
               <button
                 key={patient.id}
                 onClick={() => setSelectedId(patient.id)}
-                className={`w-full text-left rounded-xl border-l-4 transition-all duration-300 relative group
-                  ${isSelected ? 'bg-bg-elevated ring-1 ring-border-subtle' : 'hover:bg-bg-elevated/40'}
+                className={`w-full text-left rounded-lg border-l-4 transition-all duration-200 ring-1 ring-transparent bg-white/90
+                  ${isSelected ? "bg-bg-elevated/80 ring-border-subtle" : "hover:bg-bg-elevated/50"}
                   ${riskColors[patient.risk]}
                 `}
               >
-                <div className="p-4">
-                  <div className="flex justify-between items-center mb-2">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg font-black font-mono">
+                      <span className="text-lg font-semibold font-mono text-text-primary">
                         {patient.bed}
                       </span>
-                      <span className="text-[10px] font-bold text-text-muted px-2 py-0.5 bg-bg-main rounded uppercase">
+                      <span className="text-[10px] font-semibold text-text-muted px-2 py-0.5 bg-bg-main/70 rounded uppercase">
                         {patient.id}
                       </span>
                     </div>
-                    <span className="text-[10px] font-medium text-text-muted italic">
-                      {patient.lastUpdate}
-                    </span>
+                    <Badge className={`text-[10px] ${riskBadgeStyles[patient.risk]}`}>
+                      {patient.risk}
+                    </Badge>
                   </div>
 
-                  <div className="text-sm font-bold text-text-primary mb-1">
-                    {patient.name}
+                  <div>
+                    <div className="text-sm font-semibold text-text-primary">
+                      {patient.name}
+                    </div>
+                    <div className="text-[11px] text-text-muted">
+                      Updated {patient.lastUpdate}
+                    </div>
                   </div>
 
-                  {/* ALERTS: The "Why" behind the risk */}
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {patient.alerts.length > 0 ? (
-                      patient.alerts.map(alert => (
-                        <span key={alert} className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-current/10 border border-current/20">
-                          {alert}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-[9px] font-bold text-text-muted uppercase">Vitals Stable</span>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] text-text-secondary">
+                      {patient.alerts.length > 0
+                        ? `${patient.alerts.length} active alert${patient.alerts.length > 1 ? "s" : ""}`
+                        : "Vitals stable"}
+                    </div>
+                    {patient.alerts.length > 0 && (
+                      <Badge variant="outline" className="text-[10px] text-text-secondary border-border-subtle">
+                        Review
+                      </Badge>
                     )}
                   </div>
                 </div>
-
-                {/* Selection Indicator */}
-                {isSelected && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <i className="bi bi-chevron-right text-text-muted"></i>
-                  </div>
-                )}
               </button>
             );
           })
@@ -125,7 +138,7 @@ export default function Sidebar() {
 
       {/* FOOTER: System Health */}
       <div className="p-4 bg-bg-panel border-t border-border-subtle">
-        <div className="rounded-lg bg-bg-main p-3 flex items-center justify-between">
+        <div className="rounded-lg bg-bg-main/70 p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
              <div className="h-2 w-2 rounded-full bg-accent animate-pulse"></div>
              <span className="text-[10px] font-black text-text-secondary uppercase">Inference Engine</span>

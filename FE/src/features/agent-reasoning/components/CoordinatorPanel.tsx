@@ -21,7 +21,7 @@ export function CoordinatorPanel({ streamState, className = '' }: CoordinatorPan
     >
       {/* Header */}
       <div className="px-4 md:px-6 py-3 md:py-4 border-b border-border-subtle bg-gradient-to-r from-purple-900/20 to-bg-elevated">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-lg md:text-xl text-purple-500">
               🎯

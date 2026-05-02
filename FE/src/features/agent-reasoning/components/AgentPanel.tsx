@@ -4,6 +4,13 @@ import { AgentStatusIndicator } from './AgentStatusIndicator';
 import { ReasoningStream } from './ReasoningStream';
 import type { AgentConfig, AgentStreamState } from '../types/agent-stream.types';
 
+interface GenericAgentResult {
+  summary?: string;
+  overall_concern?: number;
+  overall_severity?: number;
+  overall_urgency?: number;
+}
+
 interface AgentPanelProps {
   config: AgentConfig;
   streamState: AgentStreamState;
@@ -11,7 +18,8 @@ interface AgentPanelProps {
 }
 
 export function AgentPanel({ config, streamState, className = '' }: AgentPanelProps) {
-  const { status, reasoning, result, startTime, endTime } = streamState;
+  const { status, reasoning, startTime, endTime } = streamState;
+  const result = streamState.result as GenericAgentResult | null;
 
   // Calculate duration if available
   const duration = startTime && endTime ? ((endTime - startTime) / 1000).toFixed(1) : null;
@@ -23,7 +31,7 @@ export function AgentPanel({ config, streamState, className = '' }: AgentPanelPr
     >
       {/* Header */}
       <div className="px-4 md:px-6 py-3 md:py-4 border-b border-border-subtle bg-bg-elevated">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
           <div className="flex items-center gap-2 md:gap-3">
             <div
               className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center text-lg md:text-xl"
@@ -32,7 +40,7 @@ export function AgentPanel({ config, streamState, className = '' }: AgentPanelPr
               {config.icon}
             </div>
             <h3
-              className="text-sm md:text-base font-bold uppercase tracking-wider"
+              className="text-sm md:text-base font-bold uppercase tracking-wider break-words"
               style={{ color: config.accentColor }}
             >
               {config.name}
@@ -78,7 +86,7 @@ export function AgentPanel({ config, streamState, className = '' }: AgentPanelPr
                     <div
                       key={level}
                       className={`w-2 h-4 rounded-sm ${
-                        level <= result.overall_concern
+                        level <= (result.overall_concern ?? -1)
                           ? 'opacity-100'
                           : 'opacity-20'
                       }`}
@@ -98,7 +106,7 @@ export function AgentPanel({ config, streamState, className = '' }: AgentPanelPr
                     <div
                       key={level}
                       className={`w-2 h-4 rounded-sm ${
-                        level <= result.overall_severity
+                        level <= (result.overall_severity ?? -1)
                           ? 'opacity-100'
                           : 'opacity-20'
                       }`}
@@ -118,7 +126,7 @@ export function AgentPanel({ config, streamState, className = '' }: AgentPanelPr
                     <div
                       key={level}
                       className={`w-2 h-4 rounded-sm ${
-                        level <= result.overall_urgency
+                        level <= (result.overall_urgency ?? -1)
                           ? 'opacity-100'
                           : 'opacity-20'
                       }`}

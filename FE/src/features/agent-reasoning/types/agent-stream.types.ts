@@ -22,7 +22,7 @@ export interface AgentConfig {
 export interface AgentStreamState {
   status: AgentStatus;
   reasoning: string[];
-  result: any | null;
+  result: unknown | null;
   error: Error | null;
   startTime: number | null;
   endTime: number | null;

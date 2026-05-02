@@ -35,7 +35,7 @@ export interface ConflictPattern {
   description: string;
   vitals_involved?: string[];
   labs_involved?: string[];
-  evidence?: Record<string, any>;
+  evidence?: Record<string, unknown>;
   clinical_significance?: string;
 }
 

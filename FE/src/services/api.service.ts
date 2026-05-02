@@ -22,26 +22,22 @@ class ApiService {
       },
     };
 
-    try {
-      const response = await fetch(url, config);
-      const data = await response.json();
+    const response = await fetch(url, config);
+    const data = await response.json();
 
-      if (!response.ok) {
-        throw {
-          message: data.message || 'Request failed',
-          status: response.status,
-          errors: data.errors,
-        } as ApiError;
-      }
-
-      return {
-        data,
+    if (!response.ok) {
+      throw {
+        message: data.message || 'Request failed',
         status: response.status,
-        message: data.message,
-      };
-    } catch (error) {
-      throw error;
+        errors: data.errors,
+      } as ApiError;
     }
+
+    return {
+      data,
+      status: response.status,
+      message: data.message,
+    };
   }
 
   async get<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
@@ -50,7 +46,7 @@ class ApiService {
 
   async post<T>(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
@@ -62,7 +58,7 @@ class ApiService {
 
   async put<T>(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
@@ -74,7 +70,7 @@ class ApiService {
 
   async patch<T>(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {

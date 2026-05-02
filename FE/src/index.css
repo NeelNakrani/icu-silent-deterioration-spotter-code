@@ -1,223 +1,385 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
 
-@custom-variant dark (&:is(.dark *));
+    :root {
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
 
-@theme {
-  /* Layout Colors */
-  --color-bg-main: #0b0f14;
-  --color-bg-panel: #11161c;
-  --color-bg-elevated: #161c23;
+    /* ── LIGHT (default) ──────────────────────────────────────────────── */
+    html[data-theme="light"] {
+      --surface-0: oklch(0.985 0.003 95);
+      --surface-1: oklch(0.995 0.002 95);
+      --surface-2: oklch(0.972 0.004 95);
+      --surface-hover: oklch(0.955 0.006 90);
 
-  /* Brand & Accents */
-  --color-primary: #1f2933;
-  --color-primary-hover: #273444;
-  --color-accent: #334155;
-  --color-highlight: #94a3b8;
+      --ink-1: oklch(0.22 0.01 80);
+      --ink-2: oklch(0.42 0.012 80);
+      --ink-3: oklch(0.58 0.012 80);
+      --ink-4: oklch(0.72 0.01 80);
 
-  /* Typography */
-  --color-text-primary: #e6edf3;
-  --color-text-secondary: #9aa4af;
-  --color-text-muted: #6b7280;
+      --rule: oklch(0.9 0.005 80);
+      --rule-soft: oklch(0.945 0.004 80);
+      --chip-bg: oklch(0.94 0.005 80);
+      --chip-brd: oklch(0.88 0.006 80);
 
-  /* Borders & Shadows */
-  --color-border-subtle: #1f2933;
-  --shadow-medical: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+      --accent: oklch(0.5 0.13 250);
 
-  /* Status Colors (Critical for ICU apps) */
-  --color-success: #22c55e;
-  --color-warning: #eab308;
-  --color-critical: #ef4444;
-}
+      --ok: oklch(0.65 0.13 145);
+      --trend-up: oklch(0.6 0.13 30);
+      --trend-down: oklch(0.6 0.13 250);
 
-/* --- Base Styles --- */
-@layer base {
-  body {
-    @apply antialiased bg-background text-foreground;
-    font-family: "Inter", system-ui, sans-serif;
-    margin: 0;
-    height: 100vh;
-    display: flex;
-  }
+      --risk-high-fg:  oklch(0.55 0.16 25);
+      --risk-high-bg:  oklch(0.96 0.03 25);
+      --risk-high-brd: oklch(0.86 0.06 25);
 
-  h1, h2, h3 {
-    @apply font-semibold tracking-tight;
-  }
-  * {
-    @apply border-border outline-ring/50;
-  }
-  html {
-    @apply font-sans;
-  }
-}
+      --risk-med-fg:   oklch(0.6 0.13 70);
+      --risk-med-bg:   oklch(0.97 0.03 80);
+      --risk-med-brd:  oklch(0.88 0.06 75);
 
-/* --- Components --- */
-@layer components {
-  .sidebar {
-    @apply w-60 bg-bg-panel text-text-secondary border-r border-border-subtle flex flex-col transition-all;
-  }
+      --risk-low-fg:   oklch(0.55 0.11 150);
+      --risk-low-bg:   oklch(0.96 0.03 150);
+      --risk-low-brd:  oklch(0.86 0.05 150);
 
-  .sidebar nav a {
-    @apply flex items-center px-4 py-3 transition-colors duration-200 border-l-2 border-transparent;
-    color: var(--color-text-secondary);
-  }
+      --ag-trend-fg:   oklch(0.5 0.14 245);
+      --ag-trend-bg:   oklch(0.97 0.025 245);
+      --ag-trend-brd:  oklch(0.86 0.05 245);
 
-  .sidebar nav a:hover {
-    @apply bg-bg-elevated text-text-primary border-accent;
-  }
+      --ag-conf-fg:    oklch(0.58 0.16 45);
+      --ag-conf-bg:    oklch(0.97 0.03 50);
+      --ag-conf-brd:   oklch(0.86 0.06 50);
 
-  .sidebar nav a.active {
-    @apply bg-accent/20 text-text-primary border-accent;
-  }
+      --ag-tb-fg:      oklch(0.6 0.14 75);
+      --ag-tb-bg:      oklch(0.97 0.03 80);
+      --ag-tb-brd:     oklch(0.86 0.06 80);
+    }
 
-  .main-inner {
-    @apply max-w-5xl w-full mx-auto bg-bg-panel rounded-xl p-6 border border-border-subtle shadow-medical self-center;
-  }
+    /* ── DARK (control-room) ─────────────────────────────────────────── */
+    html[data-theme="dark"] {
+      --surface-0: oklch(0.16 0.008 250);
+      --surface-1: oklch(0.205 0.01 250);
+      --surface-2: oklch(0.18 0.009 250);
+      --surface-hover: oklch(0.235 0.012 250);
 
-  /* ICU Patient/Data Card */
-  .card {
-    @apply bg-bg-panel rounded-lg p-5 text-left border border-border-subtle transition-all duration-200;
-    border-left: 4px solid var(--color-accent);
-  }
+      --ink-1: oklch(0.95 0.005 250);
+      --ink-2: oklch(0.78 0.008 250);
+      --ink-3: oklch(0.6 0.01 250);
+      --ink-4: oklch(0.45 0.008 250);
 
-  .card:hover {
-    @apply bg-bg-elevated -translate-y-0.5 shadow-lg;
-  }
+      --rule: oklch(0.28 0.01 250);
+      --rule-soft: oklch(0.235 0.008 250);
+      --chip-bg: oklch(0.26 0.012 250);
+      --chip-brd: oklch(0.32 0.012 250);
 
-  .card h3 { @apply text-sm uppercase tracking-wider text-text-secondary mb-1; }
-  .card p { @apply text-xl font-medium text-text-primary; }
+      --accent: oklch(0.7 0.15 235);
 
-  /* Status Indicators */
-  .status-pill {
-    @apply px-2 py-1 rounded-full text-xs font-bold uppercase;
-  }
-}
+      --ok: oklch(0.78 0.16 145);
+      --trend-up: oklch(0.72 0.16 30);
+      --trend-down: oklch(0.74 0.14 245);
 
-/* --- Utilities & Specific Fixes --- */
-.status-pending  { color: var(--color-warning); }
-.status-approved { color: var(--color-success); }
-.status-rejected { color: var(--color-critical); }
+      --risk-high-fg:  oklch(0.74 0.18 25);
+      --risk-high-bg:  oklch(0.28 0.07 25);
+      --risk-high-brd: oklch(0.4 0.1 25);
 
-button {
-  @apply px-4 py-2 rounded-md font-medium transition-all active:scale-95 cursor-pointer;
-  background: var(--color-accent);
-  color: var(--color-text-primary);
-}
+      --risk-med-fg:   oklch(0.78 0.16 75);
+      --risk-med-bg:   oklch(0.27 0.06 75);
+      --risk-med-brd:  oklch(0.38 0.09 75);
 
-button:hover {
-  @apply brightness-125 shadow-md;
-}
+      --risk-low-fg:   oklch(0.78 0.16 150);
+      --risk-low-bg:   oklch(0.26 0.05 150);
+      --risk-low-brd:  oklch(0.38 0.08 150);
 
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'Inter Variable', sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
+      --ag-trend-fg:   oklch(0.78 0.16 245);
+      --ag-trend-bg:   oklch(0.26 0.06 245);
+      --ag-trend-brd:  oklch(0.38 0.09 245);
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+      --ag-conf-fg:    oklch(0.78 0.17 45);
+      --ag-conf-bg:    oklch(0.27 0.07 45);
+      --ag-conf-brd:   oklch(0.4 0.1 45);
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
+      --ag-tb-fg:      oklch(0.82 0.16 80);
+      --ag-tb-bg:      oklch(0.27 0.06 80);
+      --ag-tb-brd:     oklch(0.4 0.09 80);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--surface-0);
+      color: var(--ink-1);
+      font-size: 13px;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    button { font-family: inherit; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    /* scrollbars match theme */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--ink-4); border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    img, svg, canvas, video {
+      max-width: 100%;
+    }
+
+    table {
+      max-width: 100%;
+    }
+
+    .dashboard-shell,
+    .detail-shell {
+      min-height: 100dvh;
+    }
+
+    .patient-table-wrap table {
+      min-width: 980px;
+    }
+
+    .responsive-table-block {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .responsive-table-block table {
+      min-width: 520px;
+    }
+
+    .agent-evidence-table {
+      min-width: 420px;
+    }
+
+    @media (max-width: 1180px) {
+      .dashboard-header,
+      .detail-header {
+        align-items: stretch !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+      }
+
+      .dashboard-header > [style*="flex: 1"],
+      .detail-header > [style*="flex: 1"] {
+        display: none !important;
+      }
+
+      .dashboard-actions,
+      .detail-actions {
+        margin-left: auto;
+        flex-wrap: wrap !important;
+        justify-content: flex-end !important;
+      }
+
+      .patient-lanes {
+        grid-template-columns: repeat(2, minmax(280px, 1fr)) !important;
+      }
+
+      .dashboard-stat-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+
+      .detail-layout {
+        grid-template-columns: minmax(320px, 400px) minmax(0, 1fr) !important;
+      }
+
+      .data-quality-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        font-size: 12px;
+      }
+
+      .dashboard-shell,
+      .detail-shell {
+        height: auto !important;
+        min-height: 100dvh;
+      }
+
+      .dashboard-header,
+      .detail-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        padding: 10px 12px !important;
+      }
+
+      .dashboard-brand,
+      .detail-patient-meta {
+        min-width: 0;
+        flex: 1 1 100%;
+        flex-wrap: wrap !important;
+      }
+
+      .dashboard-brand span,
+      .detail-patient-meta span {
+        overflow-wrap: anywhere;
+      }
+
+      .segmented-control,
+      .dashboard-actions,
+      .detail-actions {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .segmented-control button,
+      .dashboard-actions button,
+      .detail-actions button {
+        flex: 1 0 auto;
+        min-height: 34px;
+      }
+
+      .dashboard-live-status {
+        order: 5;
+        width: 100%;
+      }
+
+      .dashboard-stat-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      .dashboard-stat-strip > div {
+        padding: 9px 12px !important;
+      }
+
+      .patient-card-grid {
+        grid-template-columns: 1fr !important;
+        padding: 12px !important;
+      }
+
+      .patient-card {
+        border-radius: 8px !important;
+        padding: 12px !important;
+      }
+
+      .patient-card-vitals {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px !important;
+      }
+
+      .patient-card-vitals > [style*="flex: 1"] {
+        display: none !important;
+      }
+
+      .patient-lanes {
+        grid-template-columns: 1fr !important;
+        padding: 12px !important;
+      }
+
+      .patient-table-wrap {
+        padding: 12px !important;
+      }
+
+      .detail-layout {
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: visible !important;
+      }
+
+      .detail-summary-pane,
+      .detail-agent-pane {
+        overflow: visible !important;
+      }
+
+      .detail-summary-pane {
+        border-right: 0 !important;
+        border-bottom: 1px solid var(--rule);
+        padding: 12px !important;
+      }
+
+      .detail-agent-pane {
+        padding: 12px !important;
+      }
+
+      .sbar-card {
+        padding: 14px !important;
+      }
+
+      .sbar-card-header {
+        flex-direction: column !important;
+      }
+
+      .sbar-card-header > div:last-child {
+        text-align: left !important;
+      }
+
+      .sbar-card-footer {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+
+      .vitals-spark-row {
+        grid-template-columns: minmax(0, 1fr) 96px !important;
+      }
+
+      .vitals-spark-row > svg {
+        grid-column: 1 / -1;
+        order: 3;
+        width: 100% !important;
+      }
+
+      .timeline-row {
+        grid-template-columns: 42px 14px minmax(0, 1fr) !important;
+      }
+
+      .agent-card-toggle {
+        align-items: flex-start !important;
+        flex-wrap: wrap !important;
+      }
+
+      .agent-card-meta {
+        width: 100%;
+        align-items: flex-start !important;
+        padding-left: 40px;
+      }
+
+      .confidence-meter-bar {
+        width: min(120px, 35vw) !important;
+      }
+
+      .data-quality-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .dashboard-stat-strip {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      .patient-card-vitals {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      .vitals-spark-row {
+        grid-template-columns: 1fr !important;
+      }
+
+      .vitals-spark-row > div:last-child {
+        text-align: left !important;
+      }
+
+      .timeline-row {
+        align-items: flex-start !important;
+      }
+
+      .detail-actions,
+      .dashboard-actions {
+        justify-content: stretch !important;
+      }
+
+      .detail-actions button,
+      .dashboard-actions button {
+        min-width: calc(50% - 3px);
+      }
+    }
+  
