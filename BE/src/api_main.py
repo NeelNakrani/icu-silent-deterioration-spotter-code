@@ -79,10 +79,10 @@ class PatientBriefResponse(BaseModel):
     confidence_level: float
     generated_by: str
     
-    # Optional detailed reports
-    trend_summary: Optional[str] = None
-    conflict_summary: Optional[str] = None
-    timebomb_summary: Optional[str] = None
+    # Full detailed reports (not just summaries)
+    trend_report: Optional[Dict[str, Any]] = None
+    conflict_report: Optional[Dict[str, Any]] = None
+    timebomb_report: Optional[Dict[str, Any]] = None
 
 
 class PatientListResponse(BaseModel):
@@ -211,7 +211,7 @@ async def get_patient_brief(patient_id: str):
                 detail=f"Patient {patient_id} not found or no data available"
             )
         
-        # Convert to response model
+        # Convert to response model with full nested reports
         response = PatientBriefResponse(
             patient_id=brief.patient_id,
             stay_id=brief.stay_id,
@@ -226,9 +226,9 @@ async def get_patient_brief(patient_id: str):
             data_quality_score=brief.data_quality_score,
             confidence_level=brief.confidence_level,
             generated_by=brief.generated_by,
-            trend_summary=brief.trend_report.summary if brief.trend_report else None,
-            conflict_summary=brief.conflict_report.summary if brief.conflict_report else None,
-            timebomb_summary=brief.timebomb_report.summary if brief.timebomb_report else None
+            trend_report=brief.trend_report.to_dict() if brief.trend_report else None,
+            conflict_report=brief.conflict_report.to_dict() if brief.conflict_report else None,
+            timebomb_report=brief.timebomb_report.to_dict() if brief.timebomb_report else None
         )
         
         return response
