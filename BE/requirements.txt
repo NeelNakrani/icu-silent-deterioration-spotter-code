@@ -1,0 +1,41 @@
+# Core Python Dependencies
+# Python 3.11+ required
+
+# Data Processing
+pandas>=2.0.0
+polars>=0.19.0
+numpy>=1.24.0
+
+# API Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# LLM Integration
+anthropic>=0.7.0
+ibm-watsonx-ai>=0.1.0  # Optional for IBM Granite models
+
+# Async & Scheduling
+apscheduler>=3.10.0
+
+# Database
+sqlalchemy>=2.0.0
+aiosqlite>=0.19.0  # For async SQLite
+psycopg2-binary>=2.9.0  # Optional for PostgreSQL
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Utilities
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# Testing (Optional)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0  # For testing FastAPI
+
+# Development (Optional)
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
