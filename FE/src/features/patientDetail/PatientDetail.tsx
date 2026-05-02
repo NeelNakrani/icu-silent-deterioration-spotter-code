@@ -9,11 +9,13 @@ interface SbarCardProps {
 }
 
 function SbarCard({ p }: SbarCardProps) {
+  if (!p) return null;
+  
   const items = [
-    { k: "S", label: "Situation",      txt: p.situation },
-    { k: "B", label: "Background",     txt: p.background },
-    { k: "A", label: "Assessment",     txt: p.assessment },
-    { k: "R", label: "Recommendation", txt: p.recommendation },
+    { k: "S", label: "Situation",      txt: p.situation || '—' },
+    { k: "B", label: "Background",     txt: p.background || '—' },
+    { k: "A", label: "Assessment",     txt: p.assessment || '—' },
+    { k: "R", label: "Recommendation", txt: p.recommendation || '—' },
   ];
   return (
     <div className="sbar-card" style={{
@@ -26,15 +28,15 @@ function SbarCard({ p }: SbarCardProps) {
       }}>
         <div>
           <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>SBAR+ Brief</div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, lineHeight: 1.2, fontFamily: "var(--mono)" }}>subject_id {p.patient_id}</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, lineHeight: 1.2, fontFamily: "var(--mono)" }}>subject_id {p.patient_id || '—'}</h2>
           <div style={{ fontSize: 11.5, color: "var(--ink-2)", marginTop: 4, fontFamily: "var(--mono)" }}>
-            stay {p.stay_id} · {p.careunit_short} · {p.age}{p.gender} · LOS {p.los} · {p.attending}
+            stay {p.stay_id || '—'} · {p.careunit_short || '—'} · {p.age || '—'}{p.gender || ''} · LOS {p.los || '—'} · {p.attending || '—'}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <RiskPill risk_level={p.risk_level} score={p.risk_score} delta={p.risk_delta} size="lg" />
+          <RiskPill risk_level={p.risk_level || 'green'} score={p.risk_score ?? 0} delta={p.risk_delta ?? 0} size="lg" />
           <div style={{ fontSize: 11, color: "var(--risk-high-fg)", marginTop: 6, maxWidth: 200 }}>
-            {p.risk_window}
+            {p.risk_window || '—'}
           </div>
         </div>
       </div>
@@ -62,9 +64,9 @@ function SbarCard({ p }: SbarCardProps) {
         borderTop: "1px dashed var(--rule)",
         fontSize: 10.5, color: "var(--ink-3)", fontFamily: "var(--mono)",
       }}>
-        <span>data quality <strong style={{ color: "var(--ink-1)" }}>{(p.data_quality_score * 100).toFixed(0)}%</strong></span>
-        <span>confidence <strong style={{ color: "var(--ink-1)" }}>{(p.confidence_level * 100).toFixed(0)}%</strong></span>
-        <span style={{ marginLeft: "auto" }}>{p.generated_by}</span>
+        <span>data quality <strong style={{ color: "var(--ink-1)" }}>{p.data_quality_score ? (p.data_quality_score * 100).toFixed(0) : '—'}%</strong></span>
+        <span>confidence <strong style={{ color: "var(--ink-1)" }}>{p.confidence_level ? (p.confidence_level * 100).toFixed(0) : '—'}%</strong></span>
+        <span style={{ marginLeft: "auto" }}>{p.generated_by || '—'}</span>
       </div>
     </div>
   );
@@ -123,6 +125,18 @@ function VitalsSparkPanel({ vitals }: { vitals: Record<string, VitalSpark> }) {
 }
 
 function Timeline({ items }: { items: TimelineItem[] }) {
+  if (!items || items.length === 0) {
+    return (
+      <div style={{
+        background: "var(--surface-1)", border: "1px solid var(--rule)",
+        borderRadius: 12, padding: 14,
+      }}>
+        <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Recent timeline</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-3)", textAlign: "center", padding: "20px 0" }}>No timeline data available</div>
+      </div>
+    );
+  }
+  
   const kindMeta = {
     agent:  { dot: "var(--ag-trend-fg)", label: "Agent" },
     med:    { dot: "var(--ag-conf-fg)",  label: "Med" },
@@ -174,6 +188,8 @@ function ConfidenceMeter({ value, color }: { value: number; color: string }) {
 
 // Trend agent body
 function TrendBody({ report }: { report: TrendReport }) {
+  if (!report) return null;
+  
   return (
     <>
       <div className="responsive-table-block" style={{ marginBottom: 12 }}>
@@ -189,7 +205,7 @@ function TrendBody({ report }: { report: TrendReport }) {
             </tr>
           </thead>
           <tbody>
-            {report.trends.map((tr, i) => (
+            {report.trends?.map((tr, i) => (
               <tr key={i} style={{ borderTop: "1px solid var(--rule-soft)" }}>
                 <td style={{ padding: "6px 6px 6px 0", color: "var(--ink-1)", fontWeight: 500 }}>{tr.vital_name}</td>
                 <td style={{ padding: "6px 6px", color: "var(--ink-2)" }}>
@@ -212,36 +228,40 @@ function TrendBody({ report }: { report: TrendReport }) {
 
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>LLM reasoning</div>
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink-1)" }}>{report.llm_reasoning}</div>
+        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink-1)" }}>{report.llm_reasoning || '—'}</div>
       </div>
 
-      <div className="responsive-table-block">
-        <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Evidence</div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
-          <tbody>
-            {report.evidence.map((e, i) => (
+      {report.evidence && report.evidence.length > 0 && (
+        <div className="responsive-table-block">
+          <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Evidence</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5 }}>
+            <tbody>
+              {report.evidence.map((e, i) => (
               <tr key={i} style={{ borderTop: i ? "1px solid var(--rule-soft)" : "none" }}>
                 <td style={{ padding: "6px 0", fontFamily: "var(--mono)", color: "var(--ink-3)", width: 80 }}>{e.t}</td>
                 <td style={{ padding: "6px 0", color: "var(--ink-2)", width: 130 }}>{e.k}</td>
                 <td style={{ padding: "6px 0", color: "var(--ink-1)", fontFamily: "var(--mono)" }}>{e.v}</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }
 
 function ConflictBody({ report, color }: { report: ConflictReport; color: string }) {
+  if (!report) return null;
+  
   return (
     <>
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>LLM reasoning</div>
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink-1)" }}>{report.llm_reasoning}</div>
+        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink-1)" }}>{report.llm_reasoning || '—'}</div>
       </div>
 
-      {report.conflicts.map((c, i) => (
+      {report.conflicts?.map((c, i) => (
         <div key={i} style={{
           marginTop: 10, padding: "10px 12px", borderRadius: 8,
           background: "var(--surface-1)", border: "1px solid var(--rule)",
@@ -287,6 +307,8 @@ function ConflictBody({ report, color }: { report: ConflictReport; color: string
 }
 
 function TimeBombBody({ report }: { report: TimeBombReport }) {
+  if (!report) return null;
+  
   const fmtTime = (mins: number) => {
     if (mins == null) return "—";
     const sign = mins < 0 ? "+" : "−";
@@ -299,11 +321,11 @@ function TimeBombBody({ report }: { report: TimeBombReport }) {
     <>
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>LLM reasoning</div>
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink-1)" }}>{report.llm_reasoning}</div>
+        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink-1)" }}>{report.llm_reasoning || '—'}</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
-        {report.timebombs.map((tb, i) => {
+        {report.timebombs?.map((tb, i) => {
           const overdue = tb.time_until_event != null && tb.time_until_event < 0;
           const tone = tb.urgency >= 3 ? "var(--risk-high-fg)" : tb.urgency === 2 ? "var(--risk-med-fg)" : "var(--ink-3)";
           return (
@@ -418,6 +440,8 @@ interface DetailHeaderProps {
 }
 
 function DetailHeader({ p, onBack }: DetailHeaderProps) {
+  if (!p) return null;
+  
   return (
     <header className="detail-header" style={{
       display: "flex", alignItems: "center", gap: 14,
@@ -433,9 +457,9 @@ function DetailHeader({ p, onBack }: DetailHeaderProps) {
       </button>
 
       <div className="detail-patient-meta" style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-        <span style={{ fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--ink-3)" }}>{p.careunit_short}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--mono)" }}>subject_id {p.patient_id}</span>
-        <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-3)" }}>stay {p.stay_id} · {p.age}{p.gender}</span>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--ink-3)" }}>{p.careunit_short || '—'}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--mono)" }}>subject_id {p.patient_id || '—'}</span>
+        <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-3)" }}>stay {p.stay_id || '—'} · {p.age || '—'}{p.gender || ''}</span>
       </div>
 
       <div style={{ flex: 1 }} />
@@ -456,6 +480,15 @@ interface PatientDetailProps {
 }
 
 function PatientDetail({ patient: p, onBack, agentVisual }: PatientDetailProps) {
+  // Guard against undefined patient data
+  if (!p) {
+    return (
+      <div className="detail-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--surface-0)", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontSize: 14, color: "var(--ink-3)" }}>Loading patient data...</div>
+      </div>
+    );
+  }
+  
   return (
     <div className="detail-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--surface-0)" }}>
       <DetailHeader p={p} onBack={onBack} />
@@ -470,8 +503,8 @@ function PatientDetail({ patient: p, onBack, agentVisual }: PatientDetailProps) 
           display: "flex", flexDirection: "column", gap: 14,
         }}>
           <SbarCard p={p} />
-          <VitalsSparkPanel vitals={p.vitalsSpark} />
-          <Timeline items={p.timeline} />
+          {p.vitalsSpark && <VitalsSparkPanel vitals={p.vitalsSpark} />}
+          {p.timeline && <Timeline items={p.timeline} />}
         </div>
 
         {/* RIGHT: agent reasoning panels */}
@@ -483,55 +516,61 @@ function PatientDetail({ patient: p, onBack, agentVisual }: PatientDetailProps) 
               <div style={{ fontSize: 10.5, color: "var(--ink-3)", marginTop: 2 }}>3 layer-1 agents</div>
             </div>
             <div style={{ fontSize: 11, color: "var(--ink-3)", fontFamily: "var(--mono)", whiteSpace: "nowrap" }}>
-              risk <span style={{ color: "var(--risk-high-fg)", fontWeight: 600 }}>{p.risk_score.toFixed(1)}</span>
+              risk <span style={{ color: "var(--risk-high-fg)", fontWeight: 600 }}>{p.risk_score?.toFixed(1) ?? '—'}</span>
               <span style={{ margin: "0 8px", color: "var(--ink-4)" }}>·</span>
-              conf <span style={{ color: "var(--ink-1)", fontWeight: 600 }}>{(p.confidence_level * 100).toFixed(0)}%</span>
+              conf <span style={{ color: "var(--ink-1)", fontWeight: 600 }}>{p.confidence_level ? (p.confidence_level * 100).toFixed(0) : '—'}%</span>
             </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <AgentCard
-              kind="trend"
-              title="Trend Agent"
-              desc="Vital-sign trajectories"
-              glyph="T"
-              summary={p.trend_report.summary}
-              confidence={p.trend_report.confidence}
-              lastRun={p.trend_report.last_run_label}
-              level={p.trend_report.overall_concern}
-              levelKind="concern"
-              agentVisual={agentVisual}
-              defaultOpen={true}
-              body={<TrendBody report={p.trend_report} />}
-            />
-            <AgentCard
-              kind="conflict"
-              title="Lab-Vitals Conflict Agent"
-              desc="Cross-signal divergence"
-              glyph="C"
-              summary={p.conflict_report.summary}
-              confidence={p.conflict_report.confidence}
-              lastRun={p.conflict_report.last_run_label}
-              level={p.conflict_report.overall_severity}
-              levelKind="severity"
-              agentVisual={agentVisual}
-              defaultOpen={false}
-              body={<ConflictBody report={p.conflict_report} color="var(--ag-conf-fg)" />}
-            />
-            <AgentCard
-              kind="timebomb"
-              title="Time Bomb Agent"
-              desc="Forward-looking risks"
-              glyph="B"
-              summary={p.timebomb_report.summary}
-              confidence={p.timebomb_report.confidence}
-              lastRun={p.timebomb_report.last_run_label}
-              level={p.timebomb_report.overall_urgency}
-              levelKind="urgency"
-              agentVisual={agentVisual}
-              defaultOpen={false}
-              body={<TimeBombBody report={p.timebomb_report} />}
-            />
+            {p.trend_report && (
+              <AgentCard
+                kind="trend"
+                title="Trend Agent"
+                desc="Vital-sign trajectories"
+                glyph="T"
+                summary={p.trend_report.summary || 'No data available'}
+                confidence={p.trend_report.confidence ?? 0}
+                lastRun={p.trend_report.last_run_label || '—'}
+                level={p.trend_report.overall_concern ?? 0}
+                levelKind="concern"
+                agentVisual={agentVisual}
+                defaultOpen={true}
+                body={<TrendBody report={p.trend_report} />}
+              />
+            )}
+            {p.conflict_report && (
+              <AgentCard
+                kind="conflict"
+                title="Lab-Vitals Conflict Agent"
+                desc="Cross-signal divergence"
+                glyph="C"
+                summary={p.conflict_report.summary || 'No data available'}
+                confidence={p.conflict_report.confidence ?? 0}
+                lastRun={p.conflict_report.last_run_label || '—'}
+                level={p.conflict_report.overall_severity ?? 0}
+                levelKind="severity"
+                agentVisual={agentVisual}
+                defaultOpen={false}
+                body={<ConflictBody report={p.conflict_report} color="var(--ag-conf-fg)" />}
+              />
+            )}
+            {p.timebomb_report && (
+              <AgentCard
+                kind="timebomb"
+                title="Time Bomb Agent"
+                desc="Forward-looking risks"
+                glyph="B"
+                summary={p.timebomb_report.summary || 'No data available'}
+                confidence={p.timebomb_report.confidence ?? 0}
+                lastRun={p.timebomb_report.last_run_label || '—'}
+                level={p.timebomb_report.overall_urgency ?? 0}
+                levelKind="urgency"
+                agentVisual={agentVisual}
+                defaultOpen={false}
+                body={<TimeBombBody report={p.timebomb_report} />}
+              />
+            )}
           </div>
 
           {/* Data-quality footer */}
@@ -540,29 +579,37 @@ function PatientDetail({ patient: p, onBack, agentVisual }: PatientDetailProps) 
             border: "1px solid var(--rule)", background: "var(--surface-1)",
             display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12,
           }}>
-            <div>
-              <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Completeness</div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 14, fontWeight: 600 }}>{(p.data_quality.completeness_score * 100).toFixed(1)}%</div>
-              <div style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{p.data_quality.actual_readings}/{p.data_quality.total_expected_readings} readings</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Missing vitals</div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-1)" }}>
-                {p.data_quality.missing_vitals.length ? p.data_quality.missing_vitals.join(", ") : "—"}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Missing labs</div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-1)" }}>
-                {p.data_quality.missing_labs.length ? p.data_quality.missing_labs.join(", ") : "—"}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Data gaps</div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-1)" }}>
-                {p.data_quality.data_gaps_minutes.length ? p.data_quality.data_gaps_minutes.map(m => m + "m").join(", ") : "—"}
-              </div>
-            </div>
+            {p.data_quality && (
+              <>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Completeness</div>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 14, fontWeight: 600 }}>
+                    {p.data_quality.completeness_score ? (p.data_quality.completeness_score * 100).toFixed(1) : '—'}%
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+                    {p.data_quality.actual_readings ?? '—'}/{p.data_quality.total_expected_readings ?? '—'} readings
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Missing vitals</div>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-1)" }}>
+                    {p.data_quality.missing_vitals?.length ? p.data_quality.missing_vitals.join(", ") : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Missing labs</div>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-1)" }}>
+                    {p.data_quality.missing_labs?.length ? p.data_quality.missing_labs.join(", ") : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>Data gaps</div>
+                  <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink-1)" }}>
+                    {p.data_quality.data_gaps_minutes?.length ? p.data_quality.data_gaps_minutes.map(m => m + "m").join(", ") : "—"}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
