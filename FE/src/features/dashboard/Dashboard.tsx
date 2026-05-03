@@ -295,12 +295,11 @@ function StatStrip({ patients, riskFilter, onRiskFilterChange }: StatStripProps)
     clickable?: boolean;
     filterValue?: RiskLevel | "all";
   }[] = [
-    { k: "Census",    v: patients.length, sub: "active beds" },
     { k: "Red",       v: red,    sub: "critical",    tone: "red", clickable: true, filterValue: "red" },
     { k: "Yellow",    v: yellow, sub: "watch",       tone: "amber", clickable: true, filterValue: "yellow" },
     { k: "Green",     v: green,  sub: "stable",      tone: "green", clickable: true, filterValue: "green" },
+    { k: "Census",    v: patients.length, sub: "active beds" },
     { k: "Open flags",v: flags,  sub: "across cohort" },
-    { k: "Agent runs / hr", v: 142, sub: "p50 4.2s" },
   ];
   
   return (
