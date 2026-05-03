@@ -22,10 +22,10 @@ export function Chip({ tone = "neutral", children, dot = false, intense = false 
       display: "inline-flex", alignItems: "center", gap: 6,
       padding: intense ? "3px 9px" : "2px 8px",
       background: t.bg, color: t.fg, border: `1px solid ${t.brd}`,
-      borderRadius: 6, fontSize: 11, fontWeight: 500, lineHeight: 1.4,
+      borderRadius: "var(--rounded-sm)", fontSize: 11, fontWeight: 500, lineHeight: 1.4,
       letterSpacing: ".005em", whiteSpace: "nowrap",
     }}>
-      {dot && <span style={{ width: 5, height: 5, borderRadius: 99, background: t.fg, opacity: .8 }} />}
+      {dot && <span style={{ width: 5, height: 5, borderRadius: "var(--rounded-full)", background: t.fg, opacity: .8 }} />}
       {children}
     </span>
   );

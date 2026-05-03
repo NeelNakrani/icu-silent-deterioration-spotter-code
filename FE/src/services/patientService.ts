@@ -338,8 +338,15 @@ function transformPatientBrief(brief: PatientBriefResponse): PatientDetailData {
       timebombs: [],
     },
     
-    // Data quality (defaults)
-    data_quality: {
+    // Data quality from backend
+    data_quality: brief.data_quality ? {
+      total_expected_readings: brief.data_quality.total_expected_readings,
+      actual_readings: brief.data_quality.actual_readings,
+      missing_vitals: brief.data_quality.missing_vitals || [],
+      missing_labs: brief.data_quality.missing_labs || [],
+      data_gaps_minutes: brief.data_quality.data_gaps_minutes || [],
+      completeness_score: brief.data_quality.completeness_score,
+    } : {
       total_expected_readings: 0,
       actual_readings: 0,
       missing_vitals: [],

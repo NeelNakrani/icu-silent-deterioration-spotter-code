@@ -23,7 +23,7 @@ export function RiskPill({ risk_level, score, delta, size = "md" }: RiskPillProp
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 8,
       padding: px, background: t.bg, color: t.fg,
-      border: `1px solid ${t.brd}`, borderRadius: 999, fontSize: fs,
+      border: `1px solid ${t.brd}`, borderRadius: "var(--rounded-full)", fontSize: fs,
       fontWeight: 600, fontVariantNumeric: "tabular-nums", letterSpacing: ".01em",
     }}>
       <span style={{ fontFamily: "var(--mono)", fontSize: fs + 1 }}>{scoreStr}</span>

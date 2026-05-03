@@ -23,13 +23,13 @@ const AGENT_CONFIGS: AgentConfig[] = [
   {
     id: 'lab-conflict',
     name: 'Lab-Conflict Agent',
-    accentColor: '#eab308', // Yellow
+    accentColor: '#3b82f6', // Blue (matching Trend Agent)
     icon: '⚠️'
   },
   {
     id: 'timebomb',
     name: 'Time Bomb Agent',
-    accentColor: '#ef4444', // Red
+    accentColor: '#3b82f6', // Blue (matching Trend Agent)
     icon: '⏰'
   }
 ];

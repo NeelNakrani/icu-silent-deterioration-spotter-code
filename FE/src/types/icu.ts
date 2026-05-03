@@ -124,8 +124,10 @@ export interface DataQuality {
 
 export interface TimelineItem {
   t: string;
-  kind: 'agent' | 'med' | 'note' | 'lab' | 'vital' | 'order';
+  kind: 'agent' | 'med' | 'note' | 'lab' | 'vital' | 'order' | 'state_change';
   text: string;
+  from_state?: string;
+  to_state?: string;
 }
 
 export interface PatientDetailData extends PatientSummary {

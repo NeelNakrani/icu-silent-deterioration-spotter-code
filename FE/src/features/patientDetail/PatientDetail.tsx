@@ -2,6 +2,7 @@ import React from 'react';
 import type { PatientDetailData, TimelineItem, TrendReport, ConflictReport, TimeBombReport, VitalSpark } from '../../types/icu';
 import { Sparkline, RiskPill, Chip, TrendArrow, LevelBadge } from '../../components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { Switch } from '../../components/ui/switch';
 
 // Screen 2: SBAR+ Brief detail panel — aligned to api-spec SBARBrief schema.
 
@@ -29,7 +30,7 @@ function SbarCard({ p }: SbarCardProps) {
       }}>
         <div>
           <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>SBAR+ Brief</div>
-          <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, lineHeight: 1.2, fontFamily: "var(--mono)" }}>subject_id {p.patient_id || '—'}</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0, lineHeight: 1.2, fontFamily: "var(--mono)" }}>Patient ID {p.patient_id || '—'}</h2>
           <div style={{ fontSize: 11.5, color: "var(--ink-2)", marginTop: 4, fontFamily: "var(--mono)" }}>
             stay {p.stay_id || '—'} · {p.careunit_short || '—'} · {p.age || '—'}{p.gender || ''} · LOS {p.los || '—'} · {p.attending || '—'}
           </div>
@@ -141,13 +142,21 @@ function Timeline({ items }: { items: TimelineItem[] }) {
     );
   }
   
-  const kindMeta = {
+  const kindMeta: Record<string, { dot: string; label: string; bg: string }> = {
     agent:  { dot: "var(--ag-trend-fg)", label: "Agent", bg: "var(--ag-trend-bg)" },
     med:    { dot: "var(--ag-conf-fg)",  label: "Med", bg: "var(--ag-conf-bg)" },
     note:   { dot: "var(--ink-3)",       label: "Note", bg: "var(--surface-2)" },
     lab:    { dot: "var(--ag-tb-fg)",    label: "Lab", bg: "var(--ag-tb-bg)" },
     vital:  { dot: "var(--risk-high-fg)",label: "Vital", bg: "var(--risk-high-bg)" },
     order:  { dot: "var(--ink-2)",       label: "Order", bg: "var(--surface-2)" },
+    state_change: { dot: "var(--risk-med-fg)", label: "State", bg: "var(--risk-med-bg)" },
+  };
+  
+  // Helper to get state-specific styling
+  const getStateColor = (state: string) => {
+    if (state === 'red') return 'var(--risk-high-fg)';
+    if (state === 'yellow') return 'var(--risk-med-fg)';
+    return 'var(--ink-3)'; // green
   };
   
   const handleItemClick = (item: TimelineItem) => {
@@ -165,7 +174,10 @@ function Timeline({ items }: { items: TimelineItem[] }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative" }}>
           <div style={{ position: "absolute", left: 49, top: 6, bottom: 6, width: 1, background: "var(--rule)" }} />
           {items.map((it, i) => {
-            const m = kindMeta[it.kind];
+            const m = kindMeta[it.kind] || kindMeta.note;
+            const isStateChange = it.kind === 'state_change';
+            const stateColor = isStateChange && it.to_state ? getStateColor(it.to_state) : m.dot;
+            
             return (
               <button
                 key={i}
@@ -179,32 +191,40 @@ function Timeline({ items }: { items: TimelineItem[] }) {
                   padding: "5px 0",
                   position: "relative",
                   cursor: "pointer",
-                  background: "transparent",
+                  background: isStateChange ? `${stateColor}08` : "transparent",
                   borderRadius: 6,
                   marginLeft: -4,
                   paddingLeft: 4,
                   paddingRight: 4,
                   transition: "background 0.15s ease",
+                  border: isStateChange ? `1px solid ${stateColor}30` : "none",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "var(--surface-2)";
+                  e.currentTarget.style.background = isStateChange ? `${stateColor}15` : "var(--surface-2)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.background = isStateChange ? `${stateColor}08` : "transparent";
                 }}
               >
                 <span style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>{it.t}</span>
                 <span style={{
-                  width: 8,
-                  height: 8,
+                  width: isStateChange ? 10 : 8,
+                  height: isStateChange ? 10 : 8,
                   borderRadius: 99,
-                  background: m.dot,
+                  background: stateColor,
                   justifySelf: "center",
-                  boxShadow: "0 0 0 3px var(--surface-1)",
+                  boxShadow: isStateChange ? `0 0 0 3px var(--surface-1), 0 0 8px ${stateColor}60` : "0 0 0 3px var(--surface-1)",
                   transition: "box-shadow 0.15s ease",
+                  border: isStateChange ? `2px solid var(--surface-1)` : "none",
                 }} />
                 <span style={{ fontSize: 11.5, color: "var(--ink-1)", textAlign: "left" }}>
-                  <span style={{ color: "var(--ink-3)", marginRight: 8, fontVariant: "all-small-caps", letterSpacing: ".05em" }}>{m.label}</span>
+                  <span style={{
+                    color: isStateChange ? stateColor : "var(--ink-3)",
+                    marginRight: 8,
+                    fontVariant: "all-small-caps",
+                    letterSpacing: ".05em",
+                    fontWeight: isStateChange ? 600 : 400
+                  }}>{m.label}</span>
                   {it.text}
                 </span>
               </button>
@@ -233,46 +253,107 @@ function Timeline({ items }: { items: TimelineItem[] }) {
           </DialogHeader>
           {selectedItem && (
             <div style={{ padding: "8px 0" }}>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                marginBottom: 16,
-                padding: 14,
-                background: kindMeta[selectedItem.kind]?.bg || "var(--surface-2)",
-                borderRadius: 8,
-                border: `2px solid ${kindMeta[selectedItem.kind]?.dot || "var(--rule)"}`,
-                boxShadow: `0 0 0 4px ${kindMeta[selectedItem.kind]?.dot || "var(--rule)"}15`,
-              }}>
-                <span style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: 99,
-                  background: kindMeta[selectedItem.kind]?.dot || "var(--ink-3)",
-                  flexShrink: 0,
-                  boxShadow: `0 0 0 3px ${kindMeta[selectedItem.kind]?.bg || "var(--surface-2)"}`,
-                }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    fontSize: 10,
-                    color: "var(--ink-3)",
-                    textTransform: "uppercase",
-                    letterSpacing: ".08em",
-                    marginBottom: 4,
-                    fontWeight: 600,
-                  }}>
-                    {kindMeta[selectedItem.kind]?.label || selectedItem.kind}
-                  </div>
-                  <div style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: 14,
-                    color: "var(--ink-1)",
-                    fontWeight: 600,
-                  }}>
-                    {selectedItem.t}
+              {selectedItem.kind === 'state_change' && selectedItem.to_state ? (
+                // Enhanced display for state changes
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  marginBottom: 16,
+                  padding: 14,
+                  background: `${getStateColor(selectedItem.to_state)}10`,
+                  borderRadius: 8,
+                  border: `2px solid ${getStateColor(selectedItem.to_state)}`,
+                  boxShadow: `0 0 0 4px ${getStateColor(selectedItem.to_state)}15`,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                    {selectedItem.from_state && (
+                      <>
+                        <span style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: 99,
+                          background: getStateColor(selectedItem.from_state),
+                          flexShrink: 0,
+                          boxShadow: `0 0 0 3px ${getStateColor(selectedItem.to_state)}10`,
+                        }} />
+                        <span style={{ fontSize: 18, color: "var(--ink-3)" }}>→</span>
+                      </>
+                    )}
+                    <span style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: 99,
+                      background: getStateColor(selectedItem.to_state),
+                      flexShrink: 0,
+                      boxShadow: `0 0 8px ${getStateColor(selectedItem.to_state)}60`,
+                      border: `2px solid var(--surface-1)`,
+                    }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: 10,
+                        color: getStateColor(selectedItem.to_state),
+                        textTransform: "uppercase",
+                        letterSpacing: ".08em",
+                        marginBottom: 4,
+                        fontWeight: 600,
+                      }}>
+                        State Change
+                      </div>
+                      <div style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: 14,
+                        color: "var(--ink-1)",
+                        fontWeight: 600,
+                      }}>
+                        {selectedItem.t}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                // Standard display for other events
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  marginBottom: 16,
+                  padding: 14,
+                  background: kindMeta[selectedItem.kind]?.bg || "var(--surface-2)",
+                  borderRadius: 8,
+                  border: `2px solid ${kindMeta[selectedItem.kind]?.dot || "var(--rule)"}`,
+                  boxShadow: `0 0 0 4px ${kindMeta[selectedItem.kind]?.dot || "var(--rule)"}15`,
+                }}>
+                  <span style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: 99,
+                    background: kindMeta[selectedItem.kind]?.dot || "var(--ink-3)",
+                    flexShrink: 0,
+                    boxShadow: `0 0 0 3px ${kindMeta[selectedItem.kind]?.bg || "var(--surface-2)"}`,
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: 10,
+                      color: "var(--ink-3)",
+                      textTransform: "uppercase",
+                      letterSpacing: ".08em",
+                      marginBottom: 4,
+                      fontWeight: 600,
+                    }}>
+                      {kindMeta[selectedItem.kind]?.label || selectedItem.kind}
+                    </div>
+                    <div style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: 14,
+                      color: "var(--ink-1)",
+                      fontWeight: 600,
+                    }}>
+                      {selectedItem.t}
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div style={{ marginBottom: 12 }}>
                 <div style={{
@@ -283,7 +364,7 @@ function Timeline({ items }: { items: TimelineItem[] }) {
                   marginBottom: 8,
                   fontWeight: 600,
                 }}>
-                  Event Description
+                  {selectedItem.kind === 'state_change' ? 'State Transition' : 'Event Description'}
                 </div>
                 <div style={{
                   fontSize: 13,
@@ -309,7 +390,10 @@ function Timeline({ items }: { items: TimelineItem[] }) {
                 padding: 12,
                 borderRadius: 6,
               }}>
-                💡 This event occurred at {selectedItem.t} and was recorded in the patient timeline.
+                {selectedItem.kind === 'state_change'
+                  ? `⚠️ Patient state changed at ${selectedItem.t}. This indicates a significant shift in the patient's condition.`
+                  : `💡 This event occurred at ${selectedItem.t} and was recorded in the patient timeline.`
+                }
               </div>
             </div>
           )}
@@ -585,9 +669,42 @@ const btnTiny: React.CSSProperties = {
 interface DetailHeaderProps {
   p: PatientDetailData;
   onBack: () => void;
+  refresh?: boolean;
 }
 
-function DetailHeader({ p, onBack }: DetailHeaderProps) {
+function DetailHeader({ p, onBack, refresh }: DetailHeaderProps) {
+  const [tick, setTick] = React.useState(0);
+  const [isDark, setIsDark] = React.useState(true);
+  
+  React.useEffect(() => {
+    if (!refresh) return;
+    const id = setInterval(() => setTick((x) => x + 1), 1000);
+    return () => clearInterval(id);
+  }, [refresh]);
+  
+  React.useEffect(() => {
+    // Initialize from HTML data-theme attribute
+    const htmlElement = document.documentElement;
+    const theme = htmlElement.getAttribute('data-theme');
+    setIsDark(theme === 'dark');
+  }, []);
+  
+  const toggleDarkMode = (checked: boolean) => {
+    const htmlElement = document.documentElement;
+    if (checked) {
+      // Switch is ON = Dark mode
+      htmlElement.setAttribute('data-theme', 'dark');
+      setIsDark(true);
+    } else {
+      // Switch is OFF = Light mode
+      htmlElement.setAttribute('data-theme', 'light');
+      setIsDark(false);
+    }
+  };
+  
+  // Spec recommends 60s auto-refresh.
+  const seconds = (tick % 60);
+  
   if (!p) return null;
   
   return (
@@ -606,12 +723,79 @@ function DetailHeader({ p, onBack }: DetailHeaderProps) {
 
       <div className="detail-patient-meta" style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
         <span style={{ fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--ink-3)" }}>{p.careunit_short || '—'}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--mono)" }}>subject_id {p.patient_id || '—'}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "var(--mono)" }}>Patient ID {p.patient_id || '—'}</span>
         <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-3)" }}>stay {p.stay_id || '—'} · {p.age || '—'}{p.gender || ''}</span>
       </div>
 
       <div style={{ flex: 1 }} />
 
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 12px",
+        background: "var(--chip-bg)",
+        borderRadius: 8,
+        border: "1px solid var(--rule)",
+      }}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            color: isDark ? "var(--ink-3)" : "var(--ink-1)",
+            transition: "color 0.2s ease"
+          }}
+        >
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        
+        <Switch
+          checked={isDark}
+          onCheckedChange={toggleDarkMode}
+          size="sm"
+          aria-label="Toggle dark mode"
+        />
+        
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            color: isDark ? "var(--ink-1)" : "var(--ink-3)",
+            transition: "color 0.2s ease"
+          }}
+        >
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </div>
+
+      <div className="detail-live-status" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-3)" }}>
+        <span style={{
+          width: 7, height: 7, borderRadius: 99, background: "var(--ok)",
+          boxShadow: "0 0 0 3px color-mix(in oklch, var(--ok) 22%, transparent)",
+          animation: "pulse 1.6s ease-in-out infinite",
+        }} />
+        <span style={{ fontFamily: "var(--mono)" }}>GET /patient/{p.patient_id} · {60 - seconds}s</span>
+      </div>
     </header>
   );
 }
@@ -634,7 +818,7 @@ function PatientDetail({ patient: p, onBack, agentVisual }: PatientDetailProps) 
   
   return (
     <div className="detail-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--surface-0)" }}>
-      <DetailHeader p={p} onBack={onBack} />
+      <DetailHeader p={p} onBack={onBack} refresh={true} />
       <div className="detail-layout" style={{
         flex: 1, display: "grid", gridTemplateColumns: "minmax(380px, 460px) 1fr",
         gap: 0, overflow: "hidden",

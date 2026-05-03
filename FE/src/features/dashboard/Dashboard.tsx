@@ -1,6 +1,7 @@
 import React from 'react';
 import type { PatientSummary, RiskLevel } from '../../types/icu';
 import { RiskPill, Chip, VitalCell, AgentBadge } from '../../components';
+import { Switch } from '../../components/ui/switch';
 
 // Screen 1: Patient List Dashboard
 // 3 layout variants over PatientSummary[] (api-spec).
@@ -35,11 +36,33 @@ function useViewport() {
 
 function Header({ unit, setUnit, refresh, density }: HeaderProps) {
   const [tick, setTick] = React.useState(0);
+  const [isDark, setIsDark] = React.useState(true);
+  
   React.useEffect(() => {
     if (!refresh) return;
     const id = setInterval(() => setTick((x) => x + 1), 1000);
     return () => clearInterval(id);
   }, [refresh]);
+  
+  React.useEffect(() => {
+    // Initialize from HTML data-theme attribute
+    const htmlElement = document.documentElement;
+    const theme = htmlElement.getAttribute('data-theme');
+    setIsDark(theme === 'dark');
+  }, []);
+  
+  const toggleDarkMode = (checked: boolean) => {
+    const htmlElement = document.documentElement;
+    if (checked) {
+      // Switch is ON = Dark mode
+      htmlElement.setAttribute('data-theme', 'dark');
+      setIsDark(true);
+    } else {
+      // Switch is OFF = Light mode
+      htmlElement.setAttribute('data-theme', 'light');
+      setIsDark(false);
+    }
+  };
   
   // Spec recommends 60s auto-refresh.
   const seconds = (tick % 60);
@@ -67,7 +90,7 @@ function Header({ unit, setUnit, refresh, density }: HeaderProps) {
       </div>
 
       <nav className="segmented-control unit-switcher" style={{ display: "flex", gap: 2, padding: 2, background: "var(--chip-bg)", borderRadius: 8 }}>
-        {["All Units", "MICU", "SICU"].map((u) => (
+        {["All Units", "TSICU", "MICU", "SICU", "CICU", "CCU"].map((u) => (
           <button key={u} onClick={() => setUnit(u)}
             style={{
               padding: "5px 11px", border: 0, borderRadius: 6, cursor: "pointer",
@@ -81,13 +104,72 @@ function Header({ unit, setUnit, refresh, density }: HeaderProps) {
 
       <div style={{ flex: 1 }} />
 
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 12px",
+        background: "var(--chip-bg)",
+        borderRadius: 8,
+        border: "1px solid var(--rule)",
+      }}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            color: isDark ? "var(--ink-3)" : "var(--ink-1)",
+            transition: "color 0.2s ease"
+          }}
+        >
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        
+        <Switch
+          checked={isDark}
+          onCheckedChange={toggleDarkMode}
+          size="sm"
+          aria-label="Toggle dark mode"
+        />
+        
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            color: isDark ? "var(--ink-1)" : "var(--ink-3)",
+            transition: "color 0.2s ease"
+          }}
+        >
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </div>
+
       <div className="dashboard-live-status" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-3)" }}>
         <span style={{
           width: 7, height: 7, borderRadius: 99, background: "var(--ok)",
           boxShadow: "0 0 0 3px color-mix(in oklch, var(--ok) 22%, transparent)",
           animation: "pulse 1.6s ease-in-out infinite",
         }} />
-        <span style={{ fontFamily: "var(--mono)" }}>EET /patients · {60 - seconds}s</span>
+        <span style={{ fontFamily: "var(--mono)" }}>GET /patients · {60 - seconds}s</span>
       </div>
     </header>
   );
@@ -204,7 +286,7 @@ function PatientCards({ patients, onOpen }: SubComponentProps) {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
             <div>
               <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>{p.careunit_short} · {p.age}{p.gender}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, fontFamily: "var(--mono)" }}>subject_id {p.patient_id}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, fontFamily: "var(--mono)" }}>Patient ID {p.patient_id}</div>
             </div>
             <RiskPill risk_level={p.risk_level} score={p.risk_score} delta={p.risk_delta} />
           </div>
@@ -293,9 +375,9 @@ function StatStrip({ patients, riskFilter, onRiskFilterChange }: StatStripProps)
     clickable?: boolean;
     filterValue?: RiskLevel | "all";
   }[] = [
-    { k: "Red",       v: red,    sub: "critical",    tone: "red", clickable: true, filterValue: "red" },
-    { k: "Yellow",    v: yellow, sub: "watch",       tone: "amber", clickable: true, filterValue: "yellow" },
-    { k: "Green",     v: green,  sub: "stable",      tone: "green", clickable: true, filterValue: "green" },
+    { k: "Critical",  v: red,    sub: "high risk",   tone: "red", clickable: true, filterValue: "red" },
+    { k: "Watch",     v: yellow, sub: "moderate",    tone: "amber", clickable: true, filterValue: "yellow" },
+    { k: "Stable",    v: green,  sub: "low risk",    tone: "green", clickable: true, filterValue: "green" },
     { k: "Census",    v: patients.length, sub: "active beds" },
     { k: "Open flags",v: flags,  sub: "across cohort" },
   ];

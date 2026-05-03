@@ -2,127 +2,300 @@
 @import "tailwindcss";
 
     :root {
+      /* ── FONTS (Notion-Sans equivalent using Inter) ──────────────────── */
       --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+      
+      /* ── SPACING SYSTEM (4px base) ──────────────────────────────────── */
+      --spacing-xxs: 4px;
+      --spacing-xs: 8px;
+      --spacing-sm: 12px;
+      --spacing-md: 16px;
+      --spacing-lg: 20px;
+      --spacing-xl: 24px;
+      --spacing-xxl: 32px;
+      --spacing-section-sm: 48px;
+      --spacing-section: 64px;
+      --spacing-section-lg: 96px;
+      --spacing-hero: 120px;
+      
+      /* ── BORDER RADIUS SCALE ──────────────────────────────────────── */
+      --rounded-xs: 4px;
+      --rounded-sm: 6px;
+      --rounded-md: 8px;
+      --rounded-lg: 12px;
+      --rounded-xl: 16px;
+      --rounded-xxl: 20px;
+      --rounded-xxxl: 24px;
+      --rounded-full: 9999px;
     }
 
     /* ── LIGHT (default) ──────────────────────────────────────────────── */
     html[data-theme="light"] {
-      --surface-0: oklch(0.985 0.003 95);
-      --surface-1: oklch(0.995 0.002 95);
-      --surface-2: oklch(0.972 0.004 95);
-      --surface-hover: oklch(0.955 0.006 90);
+      /* ── BRAND & PRIMARY (Notion Purple) ──────────────────────────── */
+      --primary: #6C5CE7;
+      --primary-pressed: #5B4BC7;
+      --primary-deep: #4A3BA7;
+      --brand-navy: #1A1D2E;
+      --brand-navy-deep: #0F1117;
+      --brand-navy-mid: #252938;
+      --link-blue: #0066CC;
+      --link-blue-pressed: #0052A3;
+      
+      /* ── BRAND COLOR SPECTRUM ──────────────────────────────────────── */
+      --brand-pink: #FF6B9D;
+      --brand-pink-deep: #E85A8A;
+      --brand-orange: #FF8A5B;
+      --brand-orange-deep: #D97350;
+      --brand-purple: #9B87F5;
+      --brand-purple-300: #C4B5FD;
+      --brand-purple-800: #5B21B6;
+      --brand-teal: #14B8A6;
+      --brand-green: #10B981;
+      --brand-yellow: #FCD34D;
+      --brand-brown: #92400E;
+      
+      /* ── CARD TINTS (Pastel Feature Card Backgrounds) ──────────────── */
+      --card-tint-peach: #FFF4ED;
+      --card-tint-rose: #FFF1F2;
+      --card-tint-mint: #ECFDF5;
+      --card-tint-lavender: #F5F3FF;
+      --card-tint-sky: #F0F9FF;
+      --card-tint-yellow: #FEFCE8;
+      --card-tint-yellow-bold: #FEF08A;
+      --card-tint-cream: #FFFBEB;
+      --card-tint-gray: #F9FAFB;
+      
+      /* ── SURFACE (Canvas & Backgrounds) ──────────────────────────── */
+      --canvas: #FFFFFF;
+      --surface: #F9FAFB;
+      --surface-soft: #F3F4F6;
+      --surface-0: #FFFFFF;
+      --surface-1: #F9FAFB;
+      --surface-2: #F3F4F6;
+      --surface-hover: #E5E7EB;
+      
+      /* ── BORDERS ──────────────────────────────────────────────────── */
+      --hairline: #E5E7EB;
+      --hairline-soft: #F3F4F6;
+      --hairline-strong: #D1D5DB;
+      --rule: #E5E7EB;
+      --rule-soft: #F3F4F6;
+      --chip-bg: #F3F4F6;
+      --chip-brd: #D1D5DB;
+      
+      /* ── TEXT (Ink Hierarchy) ──────────────────────────────────────── */
+      --ink-deep: #000000;
+      --ink: #111827;
+      --charcoal: #1F2937;
+      --slate: #4B5563;
+      --steel: #6B7280;
+      --stone: #9CA3AF;
+      --muted: #D1D5DB;
+      --on-dark: #FFFFFF;
+      --on-dark-muted: rgba(255, 255, 255, 0.7);
+      --on-primary: #FFFFFF;
+      
+      /* Legacy ink variables for backward compatibility */
+      --ink-1: #111827;
+      --ink-2: #4B5563;
+      --ink-3: #6B7280;
+      --ink-4: #9CA3AF;
+      
+      /* ── SEMANTIC COLORS ──────────────────────────────────────────── */
+      --semantic-success: #10B981;
+      --semantic-warning: #F59E0B;
+      --semantic-error: #EF4444;
+      
+      /* ── ACCENT (Primary Purple) ──────────────────────────────────── */
+      --accent: #6C5CE7;
+      
+      /* ── STATUS & TRENDS ──────────────────────────────────────────── */
+      --ok: #10B981;
+      --trend-up: #EF4444;
+      --trend-down: #6C5CE7;
 
-      --ink-1: oklch(0.22 0.01 80);
-      --ink-2: oklch(0.42 0.012 80);
-      --ink-3: oklch(0.58 0.012 80);
-      --ink-4: oklch(0.72 0.01 80);
+      /* ── RISK LEVELS ──────────────────────────────────────────────── */
+      --risk-high-fg: #DC2626;
+      --risk-high-bg: #FEF2F2;
+      --risk-high-brd: #FCA5A5;
 
-      --rule: oklch(0.9 0.005 80);
-      --rule-soft: oklch(0.945 0.004 80);
-      --chip-bg: oklch(0.94 0.005 80);
-      --chip-brd: oklch(0.88 0.006 80);
+      --risk-med-fg: #F59E0B;
+      --risk-med-bg: #FFFBEB;
+      --risk-med-brd: #FCD34D;
 
-      --accent: oklch(0.5 0.13 250);
+      --risk-low-fg: #10B981;
+      --risk-low-bg: #ECFDF5;
+      --risk-low-brd: #6EE7B7;
 
-      --ok: oklch(0.65 0.13 145);
-      --trend-up: oklch(0.6 0.13 30);
-      --trend-down: oklch(0.6 0.13 250);
+      /* ── AGENT COLORS ──────────────────────────────────────────────── */
+      --ag-trend-fg: #6C5CE7;
+      --ag-trend-bg: #F5F3FF;
+      --ag-trend-brd: #C4B5FD;
 
-      --risk-high-fg:  oklch(0.55 0.16 25);
-      --risk-high-bg:  oklch(0.96 0.03 25);
-      --risk-high-brd: oklch(0.86 0.06 25);
+      --ag-conf-fg: #6C5CE7;
+      --ag-conf-bg: #F5F3FF;
+      --ag-conf-brd: #C4B5FD;
 
-      --risk-med-fg:   oklch(0.6 0.13 70);
-      --risk-med-bg:   oklch(0.97 0.03 80);
-      --risk-med-brd:  oklch(0.88 0.06 75);
-
-      --risk-low-fg:   oklch(0.55 0.11 150);
-      --risk-low-bg:   oklch(0.96 0.03 150);
-      --risk-low-brd:  oklch(0.86 0.05 150);
-
-      --ag-trend-fg:   oklch(0.5 0.14 245);
-      --ag-trend-bg:   oklch(0.97 0.025 245);
-      --ag-trend-brd:  oklch(0.86 0.05 245);
-
-      --ag-conf-fg:    oklch(0.58 0.16 45);
-      --ag-conf-bg:    oklch(0.97 0.03 50);
-      --ag-conf-brd:   oklch(0.86 0.06 50);
-
-      --ag-tb-fg:      oklch(0.6 0.14 75);
-      --ag-tb-bg:      oklch(0.97 0.03 80);
-      --ag-tb-brd:     oklch(0.86 0.06 80);
+      --ag-tb-fg: #6C5CE7;
+      --ag-tb-bg: #F5F3FF;
+      --ag-tb-brd: #C4B5FD;
     }
 
     /* ── DARK (control-room) ─────────────────────────────────────────── */
     html[data-theme="dark"] {
-      --surface-0: oklch(0.16 0.008 250);
-      --surface-1: oklch(0.205 0.01 250);
-      --surface-2: oklch(0.18 0.009 250);
-      --surface-hover: oklch(0.235 0.012 250);
+      /* ── BRAND & PRIMARY ──────────────────────────────────────────── */
+      --primary: #8B7FF5;
+      --primary-pressed: #7A6FE5;
+      --primary-deep: #6C5CE7;
+      --brand-navy: #0F1117;
+      --brand-navy-deep: #000000;
+      --brand-navy-mid: #1A1D2E;
+      --link-blue: #3B82F6;
+      --link-blue-pressed: #2563EB;
+      
+      /* ── BRAND COLOR SPECTRUM ──────────────────────────────────────── */
+      --brand-pink: #FF8FB8;
+      --brand-pink-deep: #FF6B9D;
+      --brand-orange: #FFA07A;
+      --brand-orange-deep: #FF8A5B;
+      --brand-purple: #B4A0FF;
+      --brand-purple-300: #D4C5FF;
+      --brand-purple-800: #7C3AED;
+      --brand-teal: #2DD4BF;
+      --brand-green: #34D399;
+      --brand-yellow: #FDE047;
+      --brand-brown: #B45309;
+      
+      /* ── CARD TINTS (Darker for dark mode) ──────────────────────────── */
+      --card-tint-peach: #2D1F1A;
+      --card-tint-rose: #2D1A1F;
+      --card-tint-mint: #1A2D26;
+      --card-tint-lavender: #252038;
+      --card-tint-sky: #1A2633;
+      --card-tint-yellow: #2D2A1A;
+      --card-tint-yellow-bold: #3D3520;
+      --card-tint-cream: #2D2820;
+      --card-tint-gray: #1F2937;
+      
+      /* ── SURFACE ──────────────────────────────────────────────────── */
+      --canvas: #111827;
+      --surface: #1F2937;
+      --surface-soft: #374151;
+      --surface-0: #0F1117;
+      --surface-1: #1A1D2E;
+      --surface-2: #252938;
+      --surface-hover: #2D3348;
+      
+      /* ── BORDERS ──────────────────────────────────────────────────── */
+      --hairline: #374151;
+      --hairline-soft: #2D3348;
+      --hairline-strong: #4B5563;
+      --rule: #374151;
+      --rule-soft: #2D3348;
+      --chip-bg: #252938;
+      --chip-brd: #374151;
+      
+      /* ── TEXT ──────────────────────────────────────────────────────── */
+      --ink-deep: #FFFFFF;
+      --ink: #F9FAFB;
+      --charcoal: #E5E7EB;
+      --slate: #D1D5DB;
+      --steel: #9CA3AF;
+      --stone: #6B7280;
+      --muted: #4B5563;
+      --on-dark: #FFFFFF;
+      --on-dark-muted: rgba(255, 255, 255, 0.7);
+      --on-primary: #FFFFFF;
+      
+      /* Legacy ink variables */
+      --ink-1: #F9FAFB;
+      --ink-2: #D1D5DB;
+      --ink-3: #9CA3AF;
+      --ink-4: #6B7280;
+      
+      /* ── SEMANTIC COLORS ──────────────────────────────────────────── */
+      --semantic-success: #34D399;
+      --semantic-warning: #FBBF24;
+      --semantic-error: #F87171;
+      
+      /* ── ACCENT ──────────────────────────────────────────────────── */
+      --accent: #8B7FF5;
+      
+      /* ── STATUS & TRENDS ──────────────────────────────────────────── */
+      --ok: #34D399;
+      --trend-up: #F87171;
+      --trend-down: #8B7FF5;
 
-      --ink-1: oklch(0.95 0.005 250);
-      --ink-2: oklch(0.78 0.008 250);
-      --ink-3: oklch(0.6 0.01 250);
-      --ink-4: oklch(0.45 0.008 250);
+      /* ── RISK LEVELS ──────────────────────────────────────────────── */
+      --risk-high-fg: #F87171;
+      --risk-high-bg: #2D1A1F;
+      --risk-high-brd: #7F1D1D;
 
-      --rule: oklch(0.28 0.01 250);
-      --rule-soft: oklch(0.235 0.008 250);
-      --chip-bg: oklch(0.26 0.012 250);
-      --chip-brd: oklch(0.32 0.012 250);
+      --risk-med-fg: #FBBF24;
+      --risk-med-bg: #2D2A1A;
+      --risk-med-brd: #92400E;
 
-      --accent: oklch(0.7 0.15 235);
+      --risk-low-fg: #34D399;
+      --risk-low-bg: #1A2D26;
+      --risk-low-brd: #065F46;
 
-      --ok: oklch(0.78 0.16 145);
-      --trend-up: oklch(0.72 0.16 30);
-      --trend-down: oklch(0.74 0.14 245);
+      /* ── AGENT COLORS ──────────────────────────────────────────────── */
+      --ag-trend-fg: #B4A0FF;
+      --ag-trend-bg: #252038;
+      --ag-trend-brd: #5B21B6;
 
-      --risk-high-fg:  oklch(0.74 0.18 25);
-      --risk-high-bg:  oklch(0.28 0.07 25);
-      --risk-high-brd: oklch(0.4 0.1 25);
+      --ag-conf-fg: #B4A0FF;
+      --ag-conf-bg: #252038;
+      --ag-conf-brd: #5B21B6;
 
-      --risk-med-fg:   oklch(0.78 0.16 75);
-      --risk-med-bg:   oklch(0.27 0.06 75);
-      --risk-med-brd:  oklch(0.38 0.09 75);
-
-      --risk-low-fg:   oklch(0.78 0.16 150);
-      --risk-low-bg:   oklch(0.26 0.05 150);
-      --risk-low-brd:  oklch(0.38 0.08 150);
-
-      --ag-trend-fg:   oklch(0.78 0.16 245);
-      --ag-trend-bg:   oklch(0.26 0.06 245);
-      --ag-trend-brd:  oklch(0.38 0.09 245);
-
-      --ag-conf-fg:    oklch(0.78 0.17 45);
-      --ag-conf-bg:    oklch(0.27 0.07 45);
-      --ag-conf-brd:   oklch(0.4 0.1 45);
-
-      --ag-tb-fg:      oklch(0.82 0.16 80);
-      --ag-tb-bg:      oklch(0.27 0.06 80);
-      --ag-tb-brd:     oklch(0.4 0.09 80);
+      --ag-tb-fg: #B4A0FF;
+      --ag-tb-bg: #252038;
+      --ag-tb-brd: #5B21B6;
     }
 
+    /* ── BASE STYLES (Notion-inspired) ──────────────────────────────── */
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
       font-family: var(--sans);
-      background: var(--surface-0);
-      color: var(--ink-1);
-      font-size: 13px;
-      line-height: 1.45;
+      background: var(--canvas);
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    button { font-family: inherit; }
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+    
+    /* ── ANIMATIONS ──────────────────────────────────────────────────── */
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
-    /* scrollbars match theme */
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--ink-4); border: 2px solid transparent; background-clip: content-box; }
-    ::-webkit-scrollbar-track { background: transparent; }
+    
+    /* ── SCROLLBARS (Notion-style) ──────────────────────────────────── */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--hairline-strong);
+      border-radius: var(--rounded-sm);
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--steel);
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
     img, svg, canvas, video {
       max-width: 100%;
@@ -154,7 +327,9 @@
       min-width: 420px;
     }
 
-    @media (max-width: 1180px) {
+    /* ── RESPONSIVE BREAKPOINTS (Notion-aligned) ──────────────────────── */
+    /* Tablet: 768-1023px */
+    @media (max-width: 1023px) {
       .dashboard-header,
       .detail-header {
         align-items: stretch !important;
@@ -195,7 +370,8 @@
       }
     }
 
-    @media (max-width: 860px) {
+    /* Mobile (large): 480-767px */
+    @media (max-width: 767px) {
       body {
         font-size: 12px;
       }

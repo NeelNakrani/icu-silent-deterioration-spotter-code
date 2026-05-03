@@ -61,6 +61,16 @@ export interface PatientBriefResponse {
     kind: string;
     text: string;
   }>;
+  
+  // Data quality metrics
+  data_quality?: {
+    total_expected_readings: number;
+    actual_readings: number;
+    missing_vitals: string[];
+    missing_labs: string[];
+    data_gaps_minutes: number[];
+    completeness_score: number;
+  };
 }
 
 // Nested report types matching backend schemas
