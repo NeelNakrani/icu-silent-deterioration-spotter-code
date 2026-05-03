@@ -51,20 +51,23 @@ function Header({ unit, setUnit, refresh, density }: HeaderProps) {
       borderBottom: "1px solid var(--rule)", background: "var(--surface-1)",
     }}>
       <div className="dashboard-brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 22, height: 22, borderRadius: 5,
-          background: "linear-gradient(135deg, var(--accent), var(--ink-1))",
-          display: "grid", placeItems: "center", color: "var(--surface-1)",
-          fontFamily: "var(--mono)", fontSize: 11, fontWeight: 700,
-        }}>S</div>
+        <img
+          src="/src/assets/logo.png"
+          alt="VitalBeat Logo"
+          style={{
+            width: 64,
+            height: 64,
+            objectFit: "contain"
+          }}
+        />
         <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: ".005em" }}>Sentinel ICU</span>
-          <span style={{ fontSize: 10.5, color: "var(--ink-3)" }}>Silent Deterioration Spotter · v0.1.0</span>
+          <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: ".005em" }}>VitalBeat</span>
+          <span style={{ fontSize: 10.5, color: "var(--ink-3)" }}>ICU Patient Monitor · v1.0.0</span>
         </div>
       </div>
 
       <nav className="segmented-control unit-switcher" style={{ display: "flex", gap: 2, padding: 2, background: "var(--chip-bg)", borderRadius: 8 }}>
-        {["All Units","MICU", "SICU"].map((u) => (
+        {["All Units", "MICU", "SICU"].map((u) => (
           <button key={u} onClick={() => setUnit(u)}
             style={{
               padding: "5px 11px", border: 0, borderRadius: 6, cursor: "pointer",
@@ -84,11 +87,7 @@ function Header({ unit, setUnit, refresh, density }: HeaderProps) {
           boxShadow: "0 0 0 3px color-mix(in oklch, var(--ok) 22%, transparent)",
           animation: "pulse 1.6s ease-in-out infinite",
         }} />
-        <span style={{ fontFamily: "var(--mono)" }}>GET /patients · {60 - seconds}s</span>
-      </div>
-
-      <div className="dashboard-actions" style={{ display: "flex", gap: 8 }}>
-        <button style={btnGhost}>Filters</button>
+        <span style={{ fontFamily: "var(--mono)" }}>EET /patients · {60 - seconds}s</span>
       </div>
     </header>
   );
@@ -206,7 +205,6 @@ function PatientCards({ patients, onOpen }: SubComponentProps) {
             <div>
               <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>{p.careunit_short} · {p.age}{p.gender}</div>
               <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, fontFamily: "var(--mono)" }}>subject_id {p.patient_id}</div>
-              <div style={{ fontSize: 11, color: "var(--ink-2)", marginTop: 1 }}>{p.primary}</div>
             </div>
             <RiskPill risk_level={p.risk_level} score={p.risk_score} delta={p.risk_delta} />
           </div>
@@ -431,6 +429,7 @@ function Dashboard({ patients, onOpen, density }: DashboardProps) {
       <Header
         unit={unit}
         setUnit={setUnit}
+        refresh={true}
         density={density}
       />
       

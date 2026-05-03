@@ -408,6 +408,9 @@ class SBARBrief:
     conflict_report: Optional[ConflictReport] = None
     timebomb_report: Optional[TimeBombReport] = None
     
+    # Timeline of recent events
+    timeline: List[Dict[str, str]] = field(default_factory=list)
+    
     # Metadata
     data_quality_score: float = 0.0
     confidence_level: float = 0.0
@@ -427,6 +430,7 @@ class SBARBrief:
             'trend_report': self.trend_report.to_dict() if self.trend_report else None,
             'conflict_report': self.conflict_report.to_dict() if self.conflict_report else None,
             'timebomb_report': self.timebomb_report.to_dict() if self.timebomb_report else None,
+            'timeline': self.timeline,
             'data_quality_score': self.data_quality_score,
             'confidence_level': self.confidence_level,
             'generated_by': self.generated_by

@@ -79,10 +79,18 @@ class PatientBriefResponse(BaseModel):
     confidence_level: float
     generated_by: str
     
+    # Patient demographics
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    careunit: Optional[str] = None
+    
     # Full detailed reports (not just summaries)
     trend_report: Optional[Dict[str, Any]] = None
     conflict_report: Optional[Dict[str, Any]] = None
     timebomb_report: Optional[Dict[str, Any]] = None
+    
+    # Timeline of recent events
+    timeline: Optional[List[Dict[str, str]]] = None
 
 
 class PatientListResponse(BaseModel):
@@ -203,6 +211,7 @@ async def get_patients():
             
             # Get cached brief if available
             brief = patient_briefs.get(patient_id)
+            flags = []
             
             if brief:
                 patient_item = PatientListItem(
@@ -215,6 +224,8 @@ async def get_patients():
                     age=patient['age'],
                     gender=patient['gender']
                 )
+                # Generate flags from brief
+                flags = generate_flags_from_brief(brief)
             else:
                 # No brief yet, calculate risk from raw data
                 risk_level, risk_score = calculate_risk_from_data(patient_id)
@@ -229,9 +240,10 @@ async def get_patients():
                     gender=patient['gender']
                 )
             
-            # Add vitals to the dict
+            # Add vitals and flags to the dict
             patient_dict = patient_item.to_dict()
             patient_dict['vitals'] = latest_vitals
+            patient_dict['flags'] = flags
             patient_list.append(patient_dict)
         
         # Sort by risk score (highest first)
@@ -277,6 +289,10 @@ async def get_patient_brief(patient_id: str):
                 detail=f"Patient {patient_id} not found or no data available"
             )
         
+        # Get patient demographics from emitter
+        patient_list = emitter.get_patient_list()
+        patient_demo = next((p for p in patient_list if p['patient_id'] == patient_id), None)
+        
         # Convert to response model with full nested reports
         response = PatientBriefResponse(
             patient_id=brief.patient_id,
@@ -292,9 +308,13 @@ async def get_patient_brief(patient_id: str):
             data_quality_score=brief.data_quality_score,
             confidence_level=brief.confidence_level,
             generated_by=brief.generated_by,
+            age=patient_demo['age'] if patient_demo else None,
+            gender=patient_demo['gender'] if patient_demo else None,
+            careunit=patient_demo['careunit'] if patient_demo else None,
             trend_report=brief.trend_report.to_dict() if brief.trend_report else None,
             conflict_report=brief.conflict_report.to_dict() if brief.conflict_report else None,
-            timebomb_report=brief.timebomb_report.to_dict() if brief.timebomb_report else None
+            timebomb_report=brief.timebomb_report.to_dict() if brief.timebomb_report else None,
+            timeline=brief.timeline if hasattr(brief, 'timeline') else []
         )
         
         return response
@@ -394,6 +414,44 @@ async def get_patient_brief_formatted(patient_id: str):
 # Helper Functions
 # ============================================================================
 
+def generate_flags_from_brief(brief: SBARBrief) -> List[str]:
+    """
+    Generate clinical flags from SBAR brief and agent reports.
+    
+    Args:
+        brief: SBARBrief with agent reports
+        
+    Returns:
+        List of flag strings
+    """
+    flags = []
+    
+    # Flags from trend report
+    if brief.trend_report:
+        for trend in brief.trend_report.trends:
+            if trend.concern_level >= 3:
+                flags.append(f"⚠️ {trend.vital_name} {trend.direction.value}")
+            elif trend.concern_level >= 2:
+                flags.append(f"↗️ {trend.vital_name} trending")
+    
+    # Flags from conflict report
+    if brief.conflict_report:
+        for conflict in brief.conflict_report.conflicts:
+            if conflict.severity >= 3:
+                flags.append(f"🔴 {conflict.conflict_type.value.replace('_', ' ').title()}")
+            elif conflict.severity >= 2:
+                flags.append(f"🟡 {conflict.conflict_type.value.replace('_', ' ').title()}")
+    
+    # Flags from timebomb report
+    if brief.timebomb_report:
+        for tb in brief.timebomb_report.timebombs:
+            if tb.urgency >= 3:
+                flags.append(f"⏰ {tb.timebomb_type.value.replace('_', ' ').title()}")
+    
+    # Limit to top 5 most critical flags
+    return flags[:5]
+
+
 def extract_latest_vitals(snapshot: Dict[str, Any]) -> Dict[str, float]:
     """
     Extract the latest vital signs from a patient snapshot.
@@ -426,12 +484,16 @@ def extract_latest_vitals(snapshot: Dict[str, Any]) -> Dict[str, float]:
         'Heart Rate': 'hr',
         'Respiratory Rate': 'rr',
         'Non Invasive Blood Pressure systolic': 'sbp',
+        'Systolic BP': 'sbp',  # Alternative label
         'Non Invasive Blood Pressure diastolic': 'dbp',
+        'Diastolic BP': 'dbp',  # Alternative label
         'Mean Arterial Pressure': 'map',
         'Arterial Blood Pressure mean': 'map',
         'O2 saturation pulseoxymetry': 'spo2',
+        'SpO2': 'spo2',  # Alternative label
         'Temperature Celsius': 'temp',
         'Temperature Fahrenheit': 'temp',
+        'Temperature': 'temp',  # Alternative label
     }
     
     # Track the latest timestamp for each vital
@@ -458,6 +520,11 @@ def extract_latest_vitals(snapshot: Dict[str, Any]) -> Dict[str, float]:
     # Update vitals dict with latest values
     for key, value in latest_values.items():
         vitals[key] = round(value, 1)
+    
+    # Calculate MAP if we have SBP and DBP but no direct MAP
+    if vitals['map'] == 0.0 and vitals['sbp'] > 0 and vitals['dbp'] > 0:
+        # MAP = DBP + (SBP - DBP) / 3
+        vitals['map'] = round(vitals['dbp'] + (vitals['sbp'] - vitals['dbp']) / 3, 1)
     
     return vitals
 
@@ -509,15 +576,16 @@ async def startup_event():
     patients = emitter.get_patient_list()
     logger.info(f"Found {len(patients)} patients in dataset")
     
-    # Pre-generate briefs for all patients (optional, for demo)
-    # Uncomment to pre-populate cache
-    # logger.info("Pre-generating briefs for all patients...")
-    # for patient in patients[:3]:  # Limit to first 3 for demo
-    #     try:
-    #         await refresh_patient_brief(patient['patient_id'])
-    #     except Exception as e:
-    #         logger.error(f"Error pre-generating brief for {patient['patient_id']}: {e}")
+    # Pre-generate briefs for all patients to ensure consistency
+    logger.info("Pre-generating briefs for all patients...")
+    for patient in patients:
+        try:
+            await refresh_patient_brief(patient['patient_id'])
+            logger.info(f"✓ Generated brief for patient {patient['patient_id']}")
+        except Exception as e:
+            logger.error(f"✗ Error pre-generating brief for {patient['patient_id']}: {e}")
     
+    logger.info(f"Pre-generated {len(patient_briefs)} patient briefs")
     logger.info("API startup complete")
     logger.info("=" * 80)
 

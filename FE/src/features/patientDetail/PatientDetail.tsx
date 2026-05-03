@@ -1,6 +1,7 @@
 import React from 'react';
 import type { PatientDetailData, TimelineItem, TrendReport, ConflictReport, TimeBombReport, VitalSpark } from '../../types/icu';
 import { Sparkline, RiskPill, Chip, TrendArrow, LevelBadge } from '../../components';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 
 // Screen 2: SBAR+ Brief detail panel — aligned to api-spec SBARBrief schema.
 
@@ -125,6 +126,9 @@ function VitalsSparkPanel({ vitals }: { vitals: Record<string, VitalSpark> }) {
 }
 
 function Timeline({ items }: { items: TimelineItem[] }) {
+  const [selectedItem, setSelectedItem] = React.useState<TimelineItem | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  
   if (!items || items.length === 0) {
     return (
       <div style={{
@@ -138,36 +142,180 @@ function Timeline({ items }: { items: TimelineItem[] }) {
   }
   
   const kindMeta = {
-    agent:  { dot: "var(--ag-trend-fg)", label: "Agent" },
-    med:    { dot: "var(--ag-conf-fg)",  label: "Med" },
-    note:   { dot: "var(--ink-3)",       label: "Note" },
-    lab:    { dot: "var(--ag-tb-fg)",    label: "Lab" },
-    vital:  { dot: "var(--risk-high-fg)",label: "Vital" },
-    order:  { dot: "var(--ink-2)",       label: "Order" },
+    agent:  { dot: "var(--ag-trend-fg)", label: "Agent", bg: "var(--ag-trend-bg)" },
+    med:    { dot: "var(--ag-conf-fg)",  label: "Med", bg: "var(--ag-conf-bg)" },
+    note:   { dot: "var(--ink-3)",       label: "Note", bg: "var(--surface-2)" },
+    lab:    { dot: "var(--ag-tb-fg)",    label: "Lab", bg: "var(--ag-tb-bg)" },
+    vital:  { dot: "var(--risk-high-fg)",label: "Vital", bg: "var(--risk-high-bg)" },
+    order:  { dot: "var(--ink-2)",       label: "Order", bg: "var(--surface-2)" },
   };
+  
+  const handleItemClick = (item: TimelineItem) => {
+    setSelectedItem(item);
+    setDialogOpen(true);
+  };
+  
   return (
-    <div style={{
-      background: "var(--surface-1)", border: "1px solid var(--rule)",
-      borderRadius: 12, padding: 14,
-    }}>
-      <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Recent timeline</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative" }}>
-        <div style={{ position: "absolute", left: 49, top: 6, bottom: 6, width: 1, background: "var(--rule)" }} />
-        {items.map((it, i) => {
-          const m = kindMeta[it.kind];
-          return (
-            <div className="timeline-row" key={i} style={{ display: "grid", gridTemplateColumns: "44px 16px 1fr", alignItems: "center", padding: "5px 0", position: "relative" }}>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>{it.t}</span>
-              <span style={{ width: 8, height: 8, borderRadius: 99, background: m.dot, justifySelf: "center", boxShadow: "0 0 0 3px var(--surface-1)" }} />
-              <span style={{ fontSize: 11.5, color: "var(--ink-1)" }}>
-                <span style={{ color: "var(--ink-3)", marginRight: 8, fontVariant: "all-small-caps", letterSpacing: ".05em" }}>{m.label}</span>
-                {it.text}
-              </span>
-            </div>
-          );
-        })}
+    <>
+      <div style={{
+        background: "var(--surface-1)", border: "1px solid var(--rule)",
+        borderRadius: 12, padding: 14,
+      }}>
+        <div style={{ fontSize: 10.5, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 10 }}>Recent timeline · Click to view details</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative" }}>
+          <div style={{ position: "absolute", left: 49, top: 6, bottom: 6, width: 1, background: "var(--rule)" }} />
+          {items.map((it, i) => {
+            const m = kindMeta[it.kind];
+            return (
+              <button
+                key={i}
+                onClick={() => handleItemClick(it)}
+                className="timeline-row"
+                style={{
+                  all: "unset",
+                  display: "grid",
+                  gridTemplateColumns: "44px 16px 1fr",
+                  alignItems: "center",
+                  padding: "5px 0",
+                  position: "relative",
+                  cursor: "pointer",
+                  background: "transparent",
+                  borderRadius: 6,
+                  marginLeft: -4,
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--surface-2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <span style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>{it.t}</span>
+                <span style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 99,
+                  background: m.dot,
+                  justifySelf: "center",
+                  boxShadow: "0 0 0 3px var(--surface-1)",
+                  transition: "box-shadow 0.15s ease",
+                }} />
+                <span style={{ fontSize: 11.5, color: "var(--ink-1)", textAlign: "left" }}>
+                  <span style={{ color: "var(--ink-3)", marginRight: 8, fontVariant: "all-small-caps", letterSpacing: ".05em" }}>{m.label}</span>
+                  {it.text}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent style={{
+          maxWidth: 500,
+          background: "var(--surface-1)",
+          border: "1px solid var(--rule)",
+          borderRadius: 12,
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+        }}>
+          <DialogHeader>
+            <DialogTitle style={{
+              fontSize: 16,
+              fontWeight: 600,
+              color: "var(--ink-1)",
+              marginBottom: 8,
+            }}>
+              Timeline Event Details
+            </DialogTitle>
+          </DialogHeader>
+          {selectedItem && (
+            <div style={{ padding: "8px 0" }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 16,
+                padding: 14,
+                background: kindMeta[selectedItem.kind]?.bg || "var(--surface-2)",
+                borderRadius: 8,
+                border: `2px solid ${kindMeta[selectedItem.kind]?.dot || "var(--rule)"}`,
+                boxShadow: `0 0 0 4px ${kindMeta[selectedItem.kind]?.dot || "var(--rule)"}15`,
+              }}>
+                <span style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: 99,
+                  background: kindMeta[selectedItem.kind]?.dot || "var(--ink-3)",
+                  flexShrink: 0,
+                  boxShadow: `0 0 0 3px ${kindMeta[selectedItem.kind]?.bg || "var(--surface-2)"}`,
+                }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: 10,
+                    color: "var(--ink-3)",
+                    textTransform: "uppercase",
+                    letterSpacing: ".08em",
+                    marginBottom: 4,
+                    fontWeight: 600,
+                  }}>
+                    {kindMeta[selectedItem.kind]?.label || selectedItem.kind}
+                  </div>
+                  <div style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: 14,
+                    color: "var(--ink-1)",
+                    fontWeight: 600,
+                  }}>
+                    {selectedItem.t}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: 12 }}>
+                <div style={{
+                  fontSize: 10.5,
+                  color: "var(--ink-3)",
+                  textTransform: "uppercase",
+                  letterSpacing: ".06em",
+                  marginBottom: 8,
+                  fontWeight: 600,
+                }}>
+                  Event Description
+                </div>
+                <div style={{
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                  color: "var(--ink-1)",
+                  padding: 14,
+                  background: "var(--surface-2)",
+                  borderRadius: 8,
+                  border: "1px solid var(--rule)",
+                }}>
+                  {selectedItem.text}
+                </div>
+              </div>
+              
+              <div style={{
+                fontSize: 11,
+                color: "var(--ink-3)",
+                fontStyle: "italic",
+                marginTop: 16,
+                paddingTop: 12,
+                borderTop: "1px dashed var(--rule)",
+                background: "var(--surface-2)",
+                padding: 12,
+                borderRadius: 6,
+              }}>
+                💡 This event occurred at {selectedItem.t} and was recorded in the patient timeline.
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

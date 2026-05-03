@@ -1,4 +1,5 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import Dashboard from './features/dashboard/Dashboard';
 import PatientDetail from './features/patientDetail/PatientDetail';
 import { TweaksPanel, TweakSection, TweakRadio, TweakButton } from './components';
@@ -11,33 +12,15 @@ const TWEAK_DEFAULTS = {
   "density": "regular"
 };
 
-
-export default function App() {
-  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const [screen, setScreen] = React.useState<"dashboard" | "detail">("dashboard");
-  const [selectedPatientId, setSelectedPatientId] = React.useState<string | null>(null);
-
-  // TanStack Queries
-  const { data: patients = [], isLoading: isLoadingList } = usePatients();
-  const { data: detail, isLoading: isLoadingDetail } = usePatientDetail(selectedPatientId);
-
-  React.useEffect(() => {
-    document.documentElement.dataset.theme = t.theme;
-  }, [t.theme]);
+function DashboardPage() {
+  const navigate = useNavigate();
+  const { data: patients = [], isLoading } = usePatients();
 
   const openPatient = (p: PatientSummary) => {
-    setSelectedPatientId(p.patient_id);
-    setScreen("detail");
-  };
-  
-  const back = () => {
-    setScreen("dashboard");
-    setSelectedPatientId(null);
+    navigate(`/patient-detail/${p.patient_id}`);
   };
 
-  const isLoading = isLoadingList || isLoadingDetail;
-
-  if (isLoading && screen === "dashboard" && patients.length === 0) {
+  if (isLoading && patients.length === 0) {
     return (
       <div style={{ display: 'grid', placeItems: 'center', height: '100vh', fontFamily: 'var(--mono)', color: 'var(--ink-3)' }}>
         Loading ICU Dashboard...
@@ -46,35 +29,59 @@ export default function App() {
   }
 
   return (
-    <>
-      {screen === "dashboard"
-        ? <div data-screen-label="01 Patient List Dashboard">
-            <Dashboard
-              patients={patients}
-              onOpen={openPatient}
-              density={t.density}
-            />
-          </div>
-        : detail && (
-          <div data-screen-label="02 SBAR+ Patient Detail">
-            <PatientDetail 
-              patient={detail}
-              onBack={back} 
-              agentVisual={t.agentVisual} 
-            />
-          </div>
-        )
-      }
+    <div data-screen-label="01 Patient List Dashboard">
+      <Dashboard
+        patients={patients}
+        onOpen={openPatient}
+        density="regular"
+      />
+    </div>
+  );
+}
 
-      {isLoading && (
-        <div style={{
-          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
-          background: 'var(--ink-1)', color: 'var(--surface-1)', padding: '4px 12px',
-          borderRadius: 99, fontSize: 10, fontFamily: 'var(--mono)', zIndex: 9999
-        }}>
-          REFRESHING...
-        </div>
-      )}
+function PatientDetailPage() {
+  const navigate = useNavigate();
+  const { patientId } = useParams<{ patientId: string }>();
+  const { data: detail, isLoading } = usePatientDetail(patientId || null);
+
+  const back = () => {
+    navigate('/');
+  };
+
+  if (isLoading || !detail) {
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', height: '100vh', fontFamily: 'var(--mono)', color: 'var(--ink-3)' }}>
+        Loading patient details...
+      </div>
+    );
+  }
+
+  return (
+    <div data-screen-label="02 SBAR+ Patient Detail">
+      <PatientDetail
+        patient={detail}
+        onBack={back}
+        agentVisual="tinted"
+      />
+    </div>
+  );
+}
+
+function AppContent() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const navigate = useNavigate();
+  const { data: patients = [] } = usePatients();
+
+  React.useEffect(() => {
+    document.documentElement.dataset.theme = t.theme;
+  }, [t.theme]);
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/patient-detail/:patientId" element={<PatientDetailPage />} />
+      </Routes>
 
       <TweaksPanel title="Tweaks">
         <TweakSection label="Theme" />
@@ -91,12 +98,23 @@ export default function App() {
           onChange={(v) => setTweak("agentVisual", v)} />
 
         <TweakSection label="Navigation" />
-        <TweakButton label={screen === "dashboard" ? "Open detail (B-12)" : "Back to dashboard"}
+        <TweakButton label="Toggle View"
           onClick={() => {
-            if (screen === "dashboard" && patients.length > 0) openPatient(patients[0]);
-            else back();
+            if (window.location.pathname === '/') {
+              if (patients.length > 0) navigate(`/patient-detail/${patients[0].patient_id}`);
+            } else {
+              navigate('/');
+            }
           }} />
       </TweaksPanel>
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
