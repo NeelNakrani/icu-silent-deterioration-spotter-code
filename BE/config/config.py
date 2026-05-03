@@ -79,9 +79,9 @@ class Config:
     # ========================================================================
     
     # IBM watsonx.ai
-    WATSONX_API_KEY: Optional[str] = os.getenv("WATSONX_API_KEY", "7UBG7AFKxKcfVM-8lse23czbbK0crtWLVzJlETJtHgp9")
-    WATSONX_PROJECT_ID: Optional[str] = os.getenv("WATSONX_PROJECT_ID", "bd61f419-2755-4a8b-973b-56eb5e6cb889")
-    WATSONX_URL: str = os.getenv("WATSONX_URL", "https://api.us-south.natural-language-understanding.watson.cloud.ibm.com/instances/ca17a02d-043a-4ad3-aa02-873836b8d54d")
+    WATSONX_API_KEY: Optional[str] = os.getenv("WATSONX_API_KEY", "")
+    WATSONX_PROJECT_ID: Optional[str] = os.getenv("WATSONX_PROJECT_ID", "")
+    WATSONX_URL: str = os.getenv("WATSONX_URL", "")
     WATSONX_MODEL: str = os.getenv("WATSONX_MODEL", "ibm/granite-13b-chat-v2")
     
     # LLM feature flags
