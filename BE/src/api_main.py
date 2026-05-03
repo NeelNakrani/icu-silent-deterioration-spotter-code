@@ -53,6 +53,8 @@ app.add_middleware(
 # Global state (in production, use proper database)
 # This stores the latest SBAR briefs for each patient
 patient_briefs: Dict[str, SBARBrief] = {}
+# Store PDOs to access data_quality and other metadata
+patient_data_objects: Dict[str, PatientDataObject] = {}
 
 # Initialize data emitter and loader
 emitter = DataEmitter(speed_multiplier=1.0)
@@ -91,6 +93,9 @@ class PatientBriefResponse(BaseModel):
     
     # Timeline of recent events
     timeline: Optional[List[Dict[str, str]]] = None
+    
+    # Data quality metrics
+    data_quality: Optional[Dict[str, Any]] = None
 
 
 class PatientListResponse(BaseModel):
@@ -293,6 +298,10 @@ async def get_patient_brief(patient_id: str):
         patient_list = emitter.get_patient_list()
         patient_demo = next((p for p in patient_list if p['patient_id'] == patient_id), None)
         
+        # Get data_quality from stored PDO
+        pdo = patient_data_objects.get(patient_id)
+        data_quality_dict = pdo.data_quality.to_dict() if pdo and pdo.data_quality else None
+        
         # Convert to response model with full nested reports
         response = PatientBriefResponse(
             patient_id=brief.patient_id,
@@ -314,7 +323,8 @@ async def get_patient_brief(patient_id: str):
             trend_report=brief.trend_report.to_dict() if brief.trend_report else None,
             conflict_report=brief.conflict_report.to_dict() if brief.conflict_report else None,
             timebomb_report=brief.timebomb_report.to_dict() if brief.timebomb_report else None,
-            timeline=brief.timeline if hasattr(brief, 'timeline') else []
+            timeline=brief.timeline if hasattr(brief, 'timeline') else [],
+            data_quality=data_quality_dict
         )
         
         return response
@@ -538,6 +548,11 @@ async def refresh_patient_brief(patient_id: str) -> None:
     """
     logger.info(f"Refreshing brief for patient {patient_id}")
     
+    # Get previous risk level if exists
+    previous_risk_level = None
+    if patient_id in patient_briefs:
+        previous_risk_level = patient_briefs[patient_id].risk_level
+    
     # Get patient snapshot from emitter
     snapshot = emitter.get_snapshot(patient_id, window_hours=6)
     
@@ -547,11 +562,12 @@ async def refresh_patient_brief(patient_id: str) -> None:
     # Create PatientDataObject
     patient_data = create_pdo_from_emitter_data(snapshot)
     
-    # Run coordinator to generate SBAR brief
-    sbar_brief = await coordinate(patient_data)
+    # Run coordinator to generate SBAR brief (pass previous risk level for state tracking)
+    sbar_brief = await coordinate(patient_data, previous_risk_level=previous_risk_level)
     
-    # Cache the brief
+    # Cache the brief and PDO
     patient_briefs[patient_id] = sbar_brief
+    patient_data_objects[patient_id] = patient_data
     
     logger.info(
         f"Brief refreshed for patient {patient_id}: "

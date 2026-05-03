@@ -323,7 +323,8 @@ def generate_recommendation(
 
 
 def generate_timeline(patient_data: PatientDataObject, trend_report: TrendReport,
-                     conflict_report: ConflictReport, timebomb_report: TimeBombReport):
+                     conflict_report: ConflictReport, timebomb_report: TimeBombReport,
+                     current_risk_level: Optional[RiskLevel] = None, previous_risk_level: Optional[RiskLevel] = None):
     """
     Generate timeline of recent events from patient data and agent reports.
     
@@ -332,11 +333,34 @@ def generate_timeline(patient_data: PatientDataObject, trend_report: TrendReport
         trend_report: Trend analysis report
         conflict_report: Conflict detection report
         timebomb_report: Time bomb detection report
+        current_risk_level: Current calculated risk level
+        previous_risk_level: Previous risk level (if available)
         
     Returns:
         List of timeline items with timestamp, kind, and text
     """
     timeline = []
+    
+    # Add state change if risk level changed
+    if current_risk_level and previous_risk_level and current_risk_level != previous_risk_level:
+        state_emoji = {
+            RiskLevel.GREEN: "🟢",
+            RiskLevel.YELLOW: "🟡",
+            RiskLevel.RED: "🔴"
+        }
+        state_text = {
+            RiskLevel.GREEN: "Stable",
+            RiskLevel.YELLOW: "Warning",
+            RiskLevel.RED: "Critical"
+        }
+        
+        timeline.append({
+            't': datetime.now().strftime('%H:%M'),
+            'kind': 'state_change',
+            'text': f"Patient state changed to {state_text[current_risk_level]} {state_emoji[current_risk_level]}",
+            'from_state': previous_risk_level.value,
+            'to_state': current_risk_level.value
+        })
     
     # Add agent findings
     if trend_report and trend_report.trends:
@@ -399,7 +423,7 @@ def generate_timeline(patient_data: PatientDataObject, trend_report: TrendReport
     return timeline[:15]
 
 
-async def coordinate(patient_data: PatientDataObject) -> SBARBrief:
+async def coordinate(patient_data: PatientDataObject, previous_risk_level: Optional[RiskLevel] = None) -> SBARBrief:
     """
     Main coordinator function that orchestrates all agents and generates SBAR brief.
     
@@ -407,6 +431,7 @@ async def coordinate(patient_data: PatientDataObject) -> SBARBrief:
     
     Args:
         patient_data: PatientDataObject containing patient data
+        previous_risk_level: Previous risk level for state change tracking (optional)
         
     Returns:
         SBARBrief with complete clinical assessment
@@ -427,8 +452,9 @@ async def coordinate(patient_data: PatientDataObject) -> SBARBrief:
     assessment = generate_assessment(conflict_report, trend_report, risk_level)
     recommendation = generate_recommendation(conflict_report, timebomb_report, risk_level)
     
-    # Generate timeline
-    timeline = generate_timeline(patient_data, trend_report, conflict_report, timebomb_report)
+    # Generate timeline (pass current and previous risk levels for state tracking)
+    timeline = generate_timeline(patient_data, trend_report, conflict_report, timebomb_report,
+                                current_risk_level=risk_level, previous_risk_level=previous_risk_level)
     
     # Calculate confidence level based on data quality
     confidence_level = patient_data.data_quality.completeness_score if patient_data.data_quality else 0.0
