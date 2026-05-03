@@ -16,7 +16,9 @@ BE/
 │   ├── loader.py         # Data loader
 │   ├── trend_agent.py    # Trend analysis agent
 │   ├── conflict_agent.py # Conflict detection agent
-│   └── timebomb_agent.py # Time bomb observer agent
+│   ├── timebomb_agent.py # Time bomb observer agent
+│   └── data/                  # Data directory (created at runtime)
+│       └── raw_data/          # Raw MIMIC-IV data
 │
 ├── tests/                 # Test files
 │   ├── __init__.py
@@ -43,8 +45,6 @@ BE/
 │   ├── README.md
 │   └── SETUP_INSTRUCTIONS.md
 │
-├── data/                  # Data directory (created at runtime)
-│   └── raw_data/         # Raw MIMIC-IV data
 │
 ├── venv/                  # Virtual environment (created by setup)
 │
