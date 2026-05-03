@@ -79,10 +79,10 @@ class PatientBriefResponse(BaseModel):
     confidence_level: float
     generated_by: str
     
-    # Optional detailed reports
-    trend_summary: Optional[str] = None
-    conflict_summary: Optional[str] = None
-    timebomb_summary: Optional[str] = None
+    # Full detailed reports (not just summaries)
+    trend_report: Optional[Dict[str, Any]] = None
+    conflict_report: Optional[Dict[str, Any]] = None
+    timebomb_report: Optional[Dict[str, Any]] = None
 
 
 class PatientListResponse(BaseModel):
@@ -115,6 +115,11 @@ def calculate_risk_from_data(patient_id: str) -> tuple[RiskLevel, float]:
         # Get patient data from emitter
         if emitter.df is None:
             emitter.load_data()
+        
+        # Type guard: emitter.df is guaranteed to be non-None after load_data()
+        if emitter.df is None:
+            logger.error("Failed to load data from emitter")
+            return RiskLevel.GREEN, 0.0
         
         patient_df = emitter.df[emitter.df['subject_id'] == int(patient_id)]
         
@@ -178,19 +183,23 @@ async def health_check():
 @app.get("/patients", response_model=PatientListResponse)
 async def get_patients():
     """
-    Get list of all patients with their current risk levels.
+    Get list of all patients with their current risk levels and latest vitals.
     
     Returns:
-        List of patients with risk information
+        List of patients with risk information and vital signs
     """
     try:
         # Get patient list from emitter
         patients = emitter.get_patient_list()
         
-        # Enrich with risk information from cached briefs or calculate from data
+        # Enrich with risk information from cached briefs, calculate from data if needed, and add latest vitals
         patient_list = []
         for patient in patients:
             patient_id = patient['patient_id']
+            
+            # Get latest vitals snapshot for this patient
+            snapshot = emitter.get_snapshot(patient_id, window_hours=1)
+            latest_vitals = extract_latest_vitals(snapshot)
             
             # Get cached brief if available
             brief = patient_briefs.get(patient_id)
@@ -220,7 +229,10 @@ async def get_patients():
                     gender=patient['gender']
                 )
             
-            patient_list.append(patient_item.to_dict())
+            # Add vitals to the dict
+            patient_dict = patient_item.to_dict()
+            patient_dict['vitals'] = latest_vitals
+            patient_list.append(patient_dict)
         
         # Sort by risk score (highest first)
         patient_list.sort(key=lambda p: p['risk_score'], reverse=True)
@@ -265,7 +277,7 @@ async def get_patient_brief(patient_id: str):
                 detail=f"Patient {patient_id} not found or no data available"
             )
         
-        # Convert to response model
+        # Convert to response model with full nested reports
         response = PatientBriefResponse(
             patient_id=brief.patient_id,
             stay_id=brief.stay_id,
@@ -280,9 +292,9 @@ async def get_patient_brief(patient_id: str):
             data_quality_score=brief.data_quality_score,
             confidence_level=brief.confidence_level,
             generated_by=brief.generated_by,
-            trend_summary=brief.trend_report.summary if brief.trend_report else None,
-            conflict_summary=brief.conflict_report.summary if brief.conflict_report else None,
-            timebomb_summary=brief.timebomb_report.summary if brief.timebomb_report else None
+            trend_report=brief.trend_report.to_dict() if brief.trend_report else None,
+            conflict_report=brief.conflict_report.to_dict() if brief.conflict_report else None,
+            timebomb_report=brief.timebomb_report.to_dict() if brief.timebomb_report else None
         )
         
         return response
@@ -381,6 +393,74 @@ async def get_patient_brief_formatted(patient_id: str):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
+def extract_latest_vitals(snapshot: Dict[str, Any]) -> Dict[str, float]:
+    """
+    Extract the latest vital signs from a patient snapshot.
+    
+    Args:
+        snapshot: Patient data snapshot from emitter
+        
+    Returns:
+        Dictionary with latest vital values (hr, sbp, dbp, map, rr, spo2, temp)
+    """
+    vitals = {
+        'hr': 0.0,
+        'sbp': 0.0,
+        'dbp': 0.0,
+        'map': 0.0,
+        'rr': 0.0,
+        'spo2': 0.0,
+        'temp': 0.0,
+    }
+    
+    if not snapshot or 'records' not in snapshot:
+        return vitals
+    
+    records = snapshot['records']
+    if not records:
+        return vitals
+    
+    # Vital sign label mappings
+    vital_mappings = {
+        'Heart Rate': 'hr',
+        'Respiratory Rate': 'rr',
+        'Non Invasive Blood Pressure systolic': 'sbp',
+        'Non Invasive Blood Pressure diastolic': 'dbp',
+        'Mean Arterial Pressure': 'map',
+        'Arterial Blood Pressure mean': 'map',
+        'O2 saturation pulseoxymetry': 'spo2',
+        'Temperature Celsius': 'temp',
+        'Temperature Fahrenheit': 'temp',
+    }
+    
+    # Track the latest timestamp for each vital
+    latest_values = {}
+    latest_times = {}
+    
+    for record in records:
+        label = record.get('label', '')
+        value = record.get('valuenum')
+        charttime = record.get('charttime')
+        
+        if label in vital_mappings and value is not None:
+            vital_key = vital_mappings[label]
+            
+            # Convert Fahrenheit to Celsius if needed
+            if label == 'Temperature Fahrenheit':
+                value = (value - 32) * 5/9
+            
+            # Keep the most recent value for each vital
+            if vital_key not in latest_times or charttime > latest_times[vital_key]:
+                latest_values[vital_key] = value
+                latest_times[vital_key] = charttime
+    
+    # Update vitals dict with latest values
+    for key, value in latest_values.items():
+        vitals[key] = round(value, 1)
+    
+    return vitals
+
 
 async def refresh_patient_brief(patient_id: str) -> None:
     """

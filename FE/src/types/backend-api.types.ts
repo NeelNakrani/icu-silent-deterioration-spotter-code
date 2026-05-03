@@ -19,6 +19,15 @@ export interface BackendPatientListItem {
   careunit: string;
   age: number;
   gender: string;
+  vitals?: {
+    hr: number;
+    sbp: number;
+    dbp: number;
+    map: number;
+    rr: number;
+    spo2: number;
+    temp: number;
+  };
 }
 
 export interface PatientBriefResponse {
@@ -36,10 +45,66 @@ export interface PatientBriefResponse {
   confidence_level: number;
   generated_by: string;
   
-  // Optional detailed reports
-  trend_summary?: string;
-  conflict_summary?: string;
-  timebomb_summary?: string;
+  // Full detailed reports (not just summaries)
+  trend_report?: TrendReportAPI;
+  conflict_report?: ConflictReportAPI;
+  timebomb_report?: TimeBombReportAPI;
+}
+
+// Nested report types matching backend schemas
+export interface TrendReportAPI {
+  patient_id: string;
+  timestamp: string;
+  trends: VitalTrendAPI[];
+  overall_concern: number;
+  summary: string;
+  llm_reasoning: string;
+}
+
+export interface VitalTrendAPI {
+  vital_name: string;
+  direction: string; // "rising" | "falling" | "stable" | "volatile"
+  slope: number;
+  acceleration: number;
+  concern_level: number;
+  values: number[];
+  timestamps: string[];
+  reasoning: string;
+}
+
+export interface ConflictReportAPI {
+  patient_id: string;
+  timestamp: string;
+  conflicts: ConflictPatternAPI[];
+  overall_severity: number;
+  summary: string;
+  llm_reasoning: string;
+}
+
+export interface ConflictPatternAPI {
+  conflict_type: string;
+  severity: number;
+  description: string;
+  vitals_involved: string[];
+  labs_involved: string[];
+  evidence: Record<string, any>;
+  clinical_significance: string;
+}
+
+export interface TimeBombReportAPI {
+  patient_id: string;
+  timestamp: string;
+  timebombs: TimeBombItemAPI[];
+  overall_urgency: number;
+  summary: string;
+}
+
+export interface TimeBombItemAPI {
+  timebomb_type: string;
+  urgency: number;
+  description: string;
+  time_until_event?: number;
+  action_required: string;
 }
 
 export interface RefreshResponse {

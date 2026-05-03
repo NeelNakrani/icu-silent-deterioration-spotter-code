@@ -50,6 +50,8 @@ export interface Trend {
   slope: number;
   acceleration: number;
   concern_level: number;
+  values: number[];
+  timestamps: string[];
   reasoning: string;
 }
 

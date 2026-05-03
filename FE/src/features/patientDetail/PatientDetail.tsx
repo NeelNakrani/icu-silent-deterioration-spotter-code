@@ -212,10 +212,10 @@ function TrendBody({ report }: { report: TrendReport }) {
                   <TrendArrow direction={tr.direction} /> <span style={{ fontVariant: "all-small-caps", letterSpacing: ".04em", marginLeft: 4 }}>{tr.direction}</span>
                 </td>
                 <td style={{ padding: "6px 6px", fontFamily: "var(--mono)", textAlign: "right", color: "var(--ink-2)" }}>
-                  {tr.slope > 0 ? "+" : ""}{tr.slope}
+                  {tr.slope > 0 ? "+" : ""}{tr.slope.toFixed(2)}
                 </td>
                 <td style={{ padding: "6px 6px", fontFamily: "var(--mono)", textAlign: "right", color: "var(--ink-3)" }}>
-                  {tr.acceleration > 0 ? "+" : ""}{tr.acceleration}
+                  {tr.acceleration > 0 ? "+" : ""}{tr.acceleration.toFixed(2)}
                 </td>
                 <td style={{ padding: "6px 0 6px 6px" }}>
                   <LevelBadge level={tr.concern_level} kind="concern" color={tr.concern_level >= 3 ? "var(--risk-high-fg)" : tr.concern_level === 2 ? "var(--risk-med-fg)" : "var(--ink-3)"} />
@@ -464,11 +464,6 @@ function DetailHeader({ p, onBack }: DetailHeaderProps) {
 
       <div style={{ flex: 1 }} />
 
-      <div className="detail-actions" style={{ display: "flex", gap: 6 }}>
-        <button style={btnTiny}>POST /refresh</button>
-        <button style={btnTiny}>Page intensivist</button>
-        <button style={{ ...btnTiny, background: "var(--ink-1)", color: "var(--surface-1)", border: 0 }}>Acknowledge brief</button>
-      </div>
     </header>
   );
 }
