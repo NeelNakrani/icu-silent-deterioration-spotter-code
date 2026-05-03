@@ -101,6 +101,59 @@ class RefreshResponse(BaseModel):
     risk_score: float
 
 
+def calculate_risk_from_data(patient_id: str) -> tuple[RiskLevel, float]:
+    """
+    Calculate risk level from raw patient data when no brief is available.
+    
+    Args:
+        patient_id: Patient subject ID
+        
+    Returns:
+        Tuple of (RiskLevel, risk_score)
+    """
+    try:
+        # Get patient data from emitter
+        if emitter.df is None:
+            emitter.load_data()
+        
+        patient_df = emitter.df[emitter.df['subject_id'] == int(patient_id)]
+        
+        if patient_df.empty:
+            return RiskLevel.GREEN, 0.0
+        
+        # Count warnings in the data
+        warning_count = patient_df['warning'].sum()
+        total_records = len(patient_df)
+        
+        # Calculate warning percentage
+        warning_percentage = (warning_count / total_records) * 100 if total_records > 0 else 0
+        
+        # Determine risk level based on warning presence and frequency
+        if warning_count == 0:
+            # No warnings - stable
+            risk_level = RiskLevel.GREEN
+            risk_score = 0.0
+        elif warning_percentage < 1.0:
+            # Less than 1% warnings - watch closely
+            risk_level = RiskLevel.YELLOW
+            risk_score = 45.0 + (warning_percentage * 10)  # 45-55 range
+        else:
+            # 1% or more warnings - critical attention
+            risk_level = RiskLevel.RED
+            risk_score = 75.0 + min(warning_percentage * 5, 25.0)  # 75-100 range
+        
+        logger.info(
+            f"Patient {patient_id}: {warning_count}/{total_records} warnings "
+            f"({warning_percentage:.2f}%) → {risk_level.value} (score: {risk_score:.1f})"
+        )
+        
+        return risk_level, risk_score
+        
+    except Exception as e:
+        logger.error(f"Error calculating risk for patient {patient_id}: {e}")
+        return RiskLevel.GREEN, 0.0
+
+
 # ============================================================================
 # API Endpoints
 # ============================================================================
@@ -134,7 +187,7 @@ async def get_patients():
         # Get patient list from emitter
         patients = emitter.get_patient_list()
         
-        # Enrich with risk information from cached briefs
+        # Enrich with risk information from cached briefs or calculate from data
         patient_list = []
         for patient in patients:
             patient_id = patient['patient_id']
@@ -154,12 +207,13 @@ async def get_patients():
                     gender=patient['gender']
                 )
             else:
-                # No brief yet, show as unknown
+                # No brief yet, calculate risk from raw data
+                risk_level, risk_score = calculate_risk_from_data(patient_id)
                 patient_item = PatientListItem(
                     patient_id=patient_id,
                     stay_id=patient['stay_id'],
-                    risk_level=RiskLevel.GREEN,  # Default
-                    risk_score=0.0,
+                    risk_level=risk_level,
+                    risk_score=risk_score,
                     last_updated=datetime.now(),
                     careunit=patient['careunit'],
                     age=patient['age'],
