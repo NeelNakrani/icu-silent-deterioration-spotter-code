@@ -75,24 +75,20 @@ class Config:
     COORDINATOR_TIMEOUT: int = int(os.getenv("COORDINATOR_TIMEOUT", "60"))
     
     # ========================================================================
-    # LLM Settings (Optional)
+    # LLM Settings - IBM watsonx.ai
     # ========================================================================
     
-    # Anthropic Claude API
-    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
-    ANTHROPIC_MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
-    ANTHROPIC_MAX_TOKENS: int = int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024"))
-    ANTHROPIC_TEMPERATURE: float = float(os.getenv("ANTHROPIC_TEMPERATURE", "0.7"))
-    
-    # IBM watsonx.ai (Optional)
+    # IBM watsonx.ai
     WATSONX_API_KEY: Optional[str] = os.getenv("WATSONX_API_KEY")
     WATSONX_PROJECT_ID: Optional[str] = os.getenv("WATSONX_PROJECT_ID")
     WATSONX_URL: str = os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com")
+    WATSONX_MODEL: str = os.getenv("WATSONX_MODEL", "ibm/granite-13b-chat-v2")
     
     # LLM feature flags
     USE_LLM_FOR_TRENDS: bool = os.getenv("USE_LLM_FOR_TRENDS", "false").lower() == "true"
     USE_LLM_FOR_CONFLICTS: bool = os.getenv("USE_LLM_FOR_CONFLICTS", "false").lower() == "true"
     USE_LLM_FOR_SBAR: bool = os.getenv("USE_LLM_FOR_SBAR", "false").lower() == "true"
+    USE_LLM_FOR_CRITICAL_PATIENTS: bool = os.getenv("USE_LLM_FOR_CRITICAL_PATIENTS", "true").lower() == "true"
     
     # ========================================================================
     # Database Settings
@@ -173,11 +169,11 @@ class Config:
             errors.append(f"MIMIC data file not found: {cls.MIMIC_DATA_PATH}")
         
         # Check LLM settings if enabled
-        if cls.USE_LLM_FOR_TRENDS or cls.USE_LLM_FOR_CONFLICTS or cls.USE_LLM_FOR_SBAR:
-            if not cls.ANTHROPIC_API_KEY and not cls.WATSONX_API_KEY:
+        if cls.USE_LLM_FOR_TRENDS or cls.USE_LLM_FOR_CONFLICTS or cls.USE_LLM_FOR_SBAR or cls.USE_LLM_FOR_CRITICAL_PATIENTS:
+            if not cls.WATSONX_API_KEY or not cls.WATSONX_PROJECT_ID:
                 errors.append(
-                    "LLM features enabled but no API key provided. "
-                    "Set ANTHROPIC_API_KEY or WATSONX_API_KEY"
+                    "LLM features enabled but IBM watsonx.ai credentials not provided. "
+                    "Set WATSONX_API_KEY and WATSONX_PROJECT_ID"
                 )
         
         # Check database settings
@@ -204,8 +200,10 @@ class Config:
         print(f"Window Hours: {cls.WINDOW_HOURS}")
         print(f"Database: {cls.DB_TYPE}")
         print(f"Scheduler: {'Enabled' if cls.SCHEDULER_ENABLED else 'Disabled'}")
+        print(f"IBM watsonx.ai: {'Configured' if cls.WATSONX_API_KEY else 'Not configured'}")
         print(f"LLM Features: Trends={cls.USE_LLM_FOR_TRENDS}, "
-              f"Conflicts={cls.USE_LLM_FOR_CONFLICTS}, SBAR={cls.USE_LLM_FOR_SBAR}")
+              f"Conflicts={cls.USE_LLM_FOR_CONFLICTS}, SBAR={cls.USE_LLM_FOR_SBAR}, "
+              f"Critical={cls.USE_LLM_FOR_CRITICAL_PATIENTS}")
         print(f"Debug Mode: {cls.DEBUG_MODE}")
         print("=" * 80)
 
@@ -239,21 +237,17 @@ SCHEDULER_INTERVAL_SECONDS=300
 AGENT_TIMEOUT=30
 COORDINATOR_TIMEOUT=60
 
-# LLM Settings (Optional)
-# ANTHROPIC_API_KEY=your_api_key_here
-# ANTHROPIC_MODEL=claude-3-sonnet-20240229
-# ANTHROPIC_MAX_TOKENS=1024
-# ANTHROPIC_TEMPERATURE=0.7
-
-# IBM watsonx.ai (Optional)
-# WATSONX_API_KEY=your_api_key_here
-# WATSONX_PROJECT_ID=your_project_id_here
-# WATSONX_URL=https://us-south.ml.cloud.ibm.com
+# LLM Settings - IBM watsonx.ai
+WATSONX_API_KEY=your_api_key_here
+WATSONX_PROJECT_ID=your_project_id_here
+WATSONX_URL=https://us-south.ml.cloud.ibm.com
+WATSONX_MODEL=ibm/granite-13b-chat-v2
 
 # LLM Feature Flags
 USE_LLM_FOR_TRENDS=false
 USE_LLM_FOR_CONFLICTS=false
 USE_LLM_FOR_SBAR=false
+USE_LLM_FOR_CRITICAL_PATIENTS=true
 
 # Database Settings
 DB_TYPE=sqlite

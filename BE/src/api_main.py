@@ -9,6 +9,12 @@ Hackathon: IBM Bob Challenge 2026
 This module provides REST API endpoints for the frontend to consume.
 """
 
+import sys
+from pathlib import Path
+
+# Add parent directory to Python path to allow imports from config package
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import asyncio
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -29,6 +35,7 @@ from schemas import (
 from coordinator import coordinate, format_sbar_for_display
 from loader import DataLoader, create_pdo_from_emitter_data
 from emitter import DataEmitter
+from config import config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -417,6 +424,96 @@ async def get_patient_brief_formatted(patient_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve formatted brief: {str(e)}"
+        )
+
+
+@app.post("/patients/{patient_id}/ai-insight")
+async def generate_ai_insight(patient_id: str):
+    """
+    Generate AI insight for a specific patient using IBM watsonx.ai.
+    This endpoint can be called manually or automatically for critical patients.
+    
+    Args:
+        patient_id: Patient subject ID
+        
+    Returns:
+        AI-generated clinical insight
+    """
+    try:
+        # Check if LLM is enabled
+        if not config.USE_LLM_FOR_CRITICAL_PATIENTS:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="AI insights feature is not enabled"
+            )
+        
+        # Get patient brief
+        brief = patient_briefs.get(patient_id)
+        if not brief:
+            # Generate brief first
+            await refresh_patient_brief(patient_id)
+            brief = patient_briefs.get(patient_id)
+        
+        if not brief:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Patient {patient_id} not found"
+            )
+        
+        # Get LLM service
+        from llm_service import initialize_llm_from_config
+        llm_service = initialize_llm_from_config()
+        
+        if not llm_service or not llm_service.available:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="AI service is not available. Please check IBM watsonx.ai configuration."
+            )
+        
+        # Get patient demographics
+        patient_list = emitter.get_patient_list()
+        patient_demo = next((p for p in patient_list if p['patient_id'] == patient_id), None)
+        
+        if not patient_demo:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Patient demographics not found for {patient_id}"
+            )
+        
+        # Generate AI insight
+        patient_info = {
+            'patient_id': patient_id,
+            'age': patient_demo['age'],
+            'gender': patient_demo['gender'],
+            'careunit': patient_demo['careunit']
+        }
+        
+        ai_insight = llm_service.generate_clinical_insight(
+            patient_data=patient_info,
+            trend_summary=brief.trend_report.summary if brief.trend_report else "",
+            conflict_summary=brief.conflict_report.summary if brief.conflict_report else "",
+            risk_level=brief.risk_level.value
+        )
+        
+        logger.info(f"AI insight generated for patient {patient_id}")
+        
+        return JSONResponse(
+            content={
+                "patient_id": patient_id,
+                "ai_insight": ai_insight,
+                "risk_level": brief.risk_level.value,
+                "timestamp": datetime.now().isoformat(),
+                "generated_by": "IBM watsonx.ai"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating AI insight for patient {patient_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate AI insight: {str(e)}"
         )
 
 

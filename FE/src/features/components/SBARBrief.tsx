@@ -1,6 +1,6 @@
 /**
  * SBARBrief Component - The "Money View" Right Panel
- * 
+ *
  * A high-contrast medical dashboard that presents critical patient deterioration
  * insights in under 60 seconds. Designed for non-clinical judges with a "Police Report"
  * aesthetic—urgent, factual, and clear.
@@ -23,6 +23,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
 import type { SBARBriefProps, RiskLevel } from '../../types/sbar.types';
 
 const riskTone: Record<RiskLevel, { badge: string; accent: string }> = {
@@ -40,8 +42,9 @@ const riskTone: Record<RiskLevel, { badge: string; accent: string }> = {
   },
 };
 
-export default function SBARBrief({ data }: SBARBriefProps) {
+export default function SBARBrief({ data, onGenerateAIInsight, isGeneratingAI = false }: SBARBriefProps) {
   const tone = riskTone[data.risk];
+  const isCritical = data.risk === 'RED';
 
   return (
     <Card className="bg-bg-panel border border-border-subtle/80 shadow-medical">
@@ -107,6 +110,52 @@ export default function SBARBrief({ data }: SBARBriefProps) {
                 {data.timeBomb}
               </p>
             </section>
+            
+            {/* AI Insight Section - Only for Critical Patients */}
+            {isCritical && (
+              <section className="mt-6 rounded-lg border border-critical/30 bg-critical/5 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-critical">
+                    <span className="h-1.5 w-1.5 rounded-full bg-critical"></span>
+                    AI Clinical Insight
+                  </div>
+                  {onGenerateAIInsight && !data.aiInsight && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onGenerateAIInsight}
+                      disabled={isGeneratingAI}
+                      className="text-xs"
+                    >
+                      {isGeneratingAI ? (
+                        <>
+                          <Spinner className="mr-2 h-3 w-3" />
+                          Generating...
+                        </>
+                      ) : (
+                        'Generate AI Insight'
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {data.aiInsight ? (
+                  <Alert className="border-critical/20 bg-bg-elevated/50">
+                    <AlertDescription className="text-sm text-text-primary leading-relaxed">
+                      <span className="font-semibold text-critical">IBM watsonx.ai:</span> {data.aiInsight}
+                    </AlertDescription>
+                  </Alert>
+                ) : isGeneratingAI ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Spinner className="h-5 w-5 text-critical" />
+                    <span className="ml-2 text-sm text-text-muted">Analyzing patient data...</span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-text-muted italic">
+                    Click "Generate AI Insight" to get IBM watsonx.ai analysis for this critical patient.
+                  </p>
+                )}
+              </section>
+            )}
           </TabsContent>
 
           <TabsContent value="trends" className="mt-4 space-y-3">

@@ -27,10 +27,26 @@ from schemas import (
 from trend_agent import analyze_trends
 from conflict_agent import detect_conflicts
 from timebomb_agent import identify_timebombs
+from config import config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize LLM service (lazy loading)
+_llm_service = None
+
+def get_llm_service():
+    """Get or initialize the LLM service."""
+    global _llm_service
+    if _llm_service is None and config.USE_LLM_FOR_CRITICAL_PATIENTS:
+        try:
+            from llm_service import initialize_llm_from_config
+            _llm_service = initialize_llm_from_config()
+            logger.info("LLM service initialized for critical patient insights")
+        except Exception as e:
+            logger.warning(f"Failed to initialize LLM service: {e}")
+    return _llm_service
 
 
 async def run_all_agents(
@@ -452,6 +468,34 @@ async def coordinate(patient_data: PatientDataObject, previous_risk_level: Optio
     assessment = generate_assessment(conflict_report, trend_report, risk_level)
     recommendation = generate_recommendation(conflict_report, timebomb_report, risk_level)
     
+    # Generate AI insight for critical patients using IBM watsonx.ai
+    ai_insight = ""
+    if risk_level == RiskLevel.RED and config.USE_LLM_FOR_CRITICAL_PATIENTS:
+        logger.info(f"Generating AI insight for critical patient {patient_data.patient_id}")
+        llm_service = get_llm_service()
+        if llm_service and llm_service.available:
+            try:
+                patient_info = {
+                    'patient_id': patient_data.patient_id,
+                    'age': patient_data.age,
+                    'gender': patient_data.gender,
+                    'careunit': patient_data.careunit
+                }
+                ai_insight = llm_service.generate_clinical_insight(
+                    patient_data=patient_info,
+                    trend_summary=trend_report.summary,
+                    conflict_summary=conflict_report.summary,
+                    risk_level=risk_level.value
+                )
+                logger.info(f"AI insight generated for patient {patient_data.patient_id}")
+            except Exception as e:
+                logger.error(f"Error generating AI insight: {e}")
+                ai_insight = ""
+    
+    # Update trend report with AI reasoning if available
+    if ai_insight:
+        trend_report.llm_reasoning = ai_insight
+    
     # Generate timeline (pass current and previous risk levels for state tracking)
     timeline = generate_timeline(patient_data, trend_report, conflict_report, timebomb_report,
                                 current_risk_level=risk_level, previous_risk_level=previous_risk_level)
@@ -476,12 +520,12 @@ async def coordinate(patient_data: PatientDataObject, previous_risk_level: Optio
         timeline=timeline,
         data_quality_score=confidence_level,
         confidence_level=confidence_level,
-        generated_by="Bob Agent System v1.0"
+        generated_by="Bob Agent System v1.0 with IBM watsonx.ai"
     )
     
     logger.info(
         f"Coordination complete for patient {patient_data.patient_id}: "
-        f"Risk={risk_level.value}, Score={risk_score:.1f}"
+        f"Risk={risk_level.value}, Score={risk_score:.1f}, AI Insight={'Yes' if ai_insight else 'No'}"
     )
     
     return sbar_brief
