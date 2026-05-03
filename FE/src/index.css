@@ -159,7 +159,7 @@
       .detail-header {
         align-items: stretch !important;
         flex-wrap: wrap !important;
-        gap: 10px !important;
+        gap: 12px !important;
       }
 
       .dashboard-header > [style*="flex: 1"],
@@ -179,7 +179,11 @@
       }
 
       .dashboard-stat-strip {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+      }
+
+      .patient-card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)) !important;
       }
 
       .detail-layout {
@@ -208,6 +212,7 @@
         top: 0;
         z-index: 20;
         padding: 10px 12px !important;
+        gap: 10px !important;
       }
 
       .dashboard-brand,
@@ -228,6 +233,7 @@
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
       }
 
       .segmented-control button,
@@ -235,24 +241,27 @@
       .detail-actions button {
         flex: 1 0 auto;
         min-height: 34px;
+        white-space: nowrap;
       }
 
       .dashboard-live-status {
         order: 5;
         width: 100%;
+        justify-content: center;
       }
 
       .dashboard-stat-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
       }
 
       .dashboard-stat-strip > div {
-        padding: 9px 12px !important;
+        padding: 9px 10px !important;
       }
 
       .patient-card-grid {
         grid-template-columns: 1fr !important;
         padding: 12px !important;
+        gap: 10px !important;
       }
 
       .patient-card {
@@ -261,13 +270,14 @@
       }
 
       .patient-card-vitals {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px 8px !important;
       }
 
-      .patient-card-vitals > [style*="flex: 1"] {
-        display: none !important;
+      .patient-card-vitals > div:last-child {
+        grid-column: 1 / -1;
+        justify-self: start;
+        align-items: flex-start !important;
       }
 
       .patient-lanes {
@@ -352,12 +362,29 @@
     }
 
     @media (max-width: 520px) {
+      .dashboard-header {
+        padding: 8px 10px !important;
+      }
+
       .dashboard-stat-strip {
-        grid-template-columns: 1fr 1fr !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      .dashboard-stat-strip > div {
+        padding: 8px !important;
+      }
+
+      .patient-card-grid {
+        padding: 10px !important;
       }
 
       .patient-card-vitals {
         grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
+
+      .patient-card-vitals > div:last-child {
+        grid-column: 1 / -1;
       }
 
       .vitals-spark-row {

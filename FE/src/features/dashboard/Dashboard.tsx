@@ -12,6 +12,27 @@ interface HeaderProps {
   density?: string;
 }
 
+function useViewport() {
+  const [size, setSize] = React.useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return size;
+}
+
 function Header({ unit, setUnit, refresh, density }: HeaderProps) {
   const [tick, setTick] = React.useState(0);
   React.useEffect(() => {
@@ -353,12 +374,35 @@ interface DashboardProps {
 }
 
 function Dashboard({ patients, onOpen, density }: DashboardProps) {
+  const { width, height } = useViewport();
+
+  const CARD_MIN_WIDTH = 320;
+  const GRID_GAP = 12;
+  const HORIZONTAL_PADDING = 40; // approx (20 left + 20 right)
+
+  const HEADER_HEIGHT = 60;
+  const STAT_HEIGHT = 60;
+  const PAGINATION_HEIGHT = 60;
+  const VERTICAL_PADDING = 40;
+
+  const availableWidth = width - HORIZONTAL_PADDING;
+  const columns = Math.max(1, Math.floor(availableWidth / (CARD_MIN_WIDTH + GRID_GAP)));
+
+  const availableHeight =
+    height - HEADER_HEIGHT - STAT_HEIGHT - PAGINATION_HEIGHT - VERTICAL_PADDING;
+
+  // Approximate card height (you can tweak this)
+  const CARD_HEIGHT = 180;
+
+  const rows = Math.max(1, Math.floor(availableHeight / (CARD_HEIGHT + GRID_GAP)));
+
+  const pageSize = columns * rows;
+
   const [unit, setUnit] = React.useState("All Units");
   const [currentPage, setCurrentPage] = React.useState(0);
   const [riskFilter, setRiskFilter] = React.useState<RiskLevel | "all">("all");
   
   // Settings: How many patients to show per page
-  const pageSize = 12;
   
   // Filter by unit first
   let filteredPatients = patients.filter(p => unit === "All Units" || p.careunit_short === unit);
