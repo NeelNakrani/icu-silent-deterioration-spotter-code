@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Hexagonal frame -->
+  <path d="M384 128L448 256L384 384H128L64 256L128 128H384Z" stroke="#4ECDC4" stroke-width="8" fill="none"/>
+  <path d="M352 160L400 256L352 352H160L112 256L160 160H352Z" stroke="#2C3E50" stroke-width="6" fill="none"/>
+  
+  <!-- Heartbeat/vital sign wave -->
+  <path d="M160 256L200 256L220 200L240 320L260 180L280 280L300 240L340 256" 
+        stroke="#4ECDC4" 
+        stroke-width="6" 
+        fill="none" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+</svg>
+
+<!-- Made with Bob -->

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { PatientSummary, RiskLevel } from '../../types/icu';
-import { RiskPill, Chip, TrendArrow, VitalCell, AgentBadge } from '../../components';
+import { RiskPill, Chip, VitalCell, AgentBadge } from '../../components';
+import { Switch } from '../../components/ui/switch';
 
 // Screen 1: Patient List Dashboard
 // 3 layout variants over PatientSummary[] (api-spec).
@@ -10,18 +11,58 @@ interface HeaderProps {
   setUnit: (unit: string) => void;
   refresh?: boolean;
   density?: string;
-  variant: string;
-  setVariant: (variant: string) => void;
-  total: number;
 }
 
-function Header({ unit, setUnit, refresh, density, variant, setVariant }: HeaderProps) {
+function useViewport() {
+  const [size, setSize] = React.useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return size;
+}
+
+function Header({ unit, setUnit, refresh, density }: HeaderProps) {
   const [tick, setTick] = React.useState(0);
+  const [isDark, setIsDark] = React.useState(true);
+  
   React.useEffect(() => {
     if (!refresh) return;
     const id = setInterval(() => setTick((x) => x + 1), 1000);
     return () => clearInterval(id);
   }, [refresh]);
+  
+  React.useEffect(() => {
+    // Initialize from HTML data-theme attribute
+    const htmlElement = document.documentElement;
+    const theme = htmlElement.getAttribute('data-theme');
+    setIsDark(theme === 'dark');
+  }, []);
+  
+  const toggleDarkMode = (checked: boolean) => {
+    const htmlElement = document.documentElement;
+    if (checked) {
+      // Switch is ON = Dark mode
+      htmlElement.setAttribute('data-theme', 'dark');
+      setIsDark(true);
+    } else {
+      // Switch is OFF = Light mode
+      htmlElement.setAttribute('data-theme', 'light');
+      setIsDark(false);
+    }
+  };
   
   // Spec recommends 60s auto-refresh.
   const seconds = (tick % 60);
@@ -33,20 +74,23 @@ function Header({ unit, setUnit, refresh, density, variant, setVariant }: Header
       borderBottom: "1px solid var(--rule)", background: "var(--surface-1)",
     }}>
       <div className="dashboard-brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{
-          width: 22, height: 22, borderRadius: 5,
-          background: "linear-gradient(135deg, var(--accent), var(--ink-1))",
-          display: "grid", placeItems: "center", color: "var(--surface-1)",
-          fontFamily: "var(--mono)", fontSize: 11, fontWeight: 700,
-        }}>S</div>
+        <img
+          src="/src/assets/logo.png"
+          alt="VitalBeat Logo"
+          style={{
+            width: 64,
+            height: 64,
+            objectFit: "contain"
+          }}
+        />
         <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: ".005em" }}>Sentinel ICU</span>
-          <span style={{ fontSize: 10.5, color: "var(--ink-3)" }}>Silent Deterioration Spotter · v0.1.0</span>
+          <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: ".005em" }}>VitalBeat</span>
+          <span style={{ fontSize: 10.5, color: "var(--ink-3)" }}>ICU Patient Monitor · v1.0.0</span>
         </div>
       </div>
 
       <nav className="segmented-control unit-switcher" style={{ display: "flex", gap: 2, padding: 2, background: "var(--chip-bg)", borderRadius: 8 }}>
-        {["MICU", "SICU", "All Units"].map((u) => (
+        {["All Units", "TSICU", "MICU", "SICU", "CICU", "CCU"].map((u) => (
           <button key={u} onClick={() => setUnit(u)}
             style={{
               padding: "5px 11px", border: 0, borderRadius: 6, cursor: "pointer",
@@ -60,6 +104,65 @@ function Header({ unit, setUnit, refresh, density, variant, setVariant }: Header
 
       <div style={{ flex: 1 }} />
 
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 12px",
+        background: "var(--chip-bg)",
+        borderRadius: 8,
+        border: "1px solid var(--rule)",
+      }}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            color: isDark ? "var(--ink-3)" : "var(--ink-1)",
+            transition: "color 0.2s ease"
+          }}
+        >
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        
+        <Switch
+          checked={isDark}
+          onCheckedChange={toggleDarkMode}
+          size="sm"
+          aria-label="Toggle dark mode"
+        />
+        
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            color: isDark ? "var(--ink-1)" : "var(--ink-3)",
+            transition: "color 0.2s ease"
+          }}
+        >
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </div>
+
       <div className="dashboard-live-status" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--ink-3)" }}>
         <span style={{
           width: 7, height: 7, borderRadius: 99, background: "var(--ok)",
@@ -68,25 +171,6 @@ function Header({ unit, setUnit, refresh, density, variant, setVariant }: Header
         }} />
         <span style={{ fontFamily: "var(--mono)" }}>GET /patients · {60 - seconds}s</span>
       </div>
-
-      <div className="segmented-control layout-switcher" style={{ display: "flex", gap: 2, padding: 2, background: "var(--chip-bg)", borderRadius: 8 }}>
-        {[
-          { v: "table", l: "Table" },
-          { v: "cards", l: "Cards" },
-          { v: "lanes", l: "Lanes" },
-        ].map((o) => (
-          <button key={o.v} onClick={() => setVariant(o.v)}
-            style={{
-              padding: "5px 10px", border: 0, borderRadius: 6, cursor: "pointer",
-              background: variant === o.v ? "var(--surface-1)" : "transparent",
-              color: variant === o.v ? "var(--ink-1)" : "var(--ink-2)",
-              fontSize: 11, fontWeight: variant === o.v ? 600 : 500,
-              fontFamily: "var(--mono)", letterSpacing: ".02em",
-              boxShadow: variant === o.v ? "0 1px 2px rgba(0,0,0,.06), 0 0 0 .5px rgba(0,0,0,.06)" : "none",
-            }}>{o.l}</button>
-        ))}
-      </div>
-
     </header>
   );
 }
@@ -94,10 +178,6 @@ function Header({ unit, setUnit, refresh, density, variant, setVariant }: Header
 const btnGhost: React.CSSProperties = {
   padding: "5px 11px", border: "1px solid var(--rule)", background: "var(--surface-1)",
   color: "var(--ink-2)", borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
-};
-const btnPrimary: React.CSSProperties = {
-  padding: "5px 11px", border: 0, background: "var(--ink-1)",
-  color: "var(--surface-1)", borderRadius: 7, fontSize: 11.5, fontWeight: 500, cursor: "pointer",
 };
 
 const flagTone = (f: string): "red" | "amber" | "neutral" =>
@@ -109,90 +189,83 @@ function riskVar(level: RiskLevel) {
   return level === "red" ? "high" : level === "yellow" ? "med" : "low";
 }
 
-const th: React.CSSProperties = { padding: "10px 10px", borderBottom: "1px solid var(--rule)", fontWeight: 500 };
-const td: React.CSSProperties = { padding: "10px 10px", borderBottom: "1px solid var(--rule-soft)", verticalAlign: "middle" };
-const tdMono: React.CSSProperties = { ...td, fontFamily: "var(--mono)", fontVariantNumeric: "tabular-nums", color: "var(--ink-1)", width: 56 };
-
-// ── Variant A: Dense Table with colored row borders ─────────────────────────
+// ── Patient Cards (Default View) ────────────────────────────────────────────
 interface SubComponentProps {
   patients: PatientSummary[];
   onOpen: (patient: PatientSummary) => void;
 }
 
-function PatientTable({ patients, onOpen }: SubComponentProps) {
+interface PaginationControlsProps {
+  onPrev?: () => void;
+  onNext?: () => void;
+  pageInfo?: string;
+}
+
+function PaginationControls({ onPrev, onNext, pageInfo }: PaginationControlsProps) {
+  if (!pageInfo) return null;
+  
   return (
-    <div className="patient-table-wrap" style={{ padding: "16px 20px", overflow: "auto" }}>
-      <table style={{
-        width: "100%", borderCollapse: "separate", borderSpacing: 0,
-        fontSize: 12, color: "var(--ink-1)",
+    <div className="pagination-controls" style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      padding: "12px 20px",
+      borderBottom: "1px solid var(--rule-soft)",
+      background: "var(--surface-1)",
+    }}>
+      <button
+        onClick={onPrev}
+        disabled={!onPrev}
+        style={{
+          ...btnGhost,
+          padding: "6px 8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: onPrev ? 1 : 0.4,
+          cursor: onPrev ? "pointer" : "not-allowed",
+        }}
+        aria-label="Previous page"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      
+      <span style={{
+        fontFamily: "var(--mono)",
+        fontSize: 11.5,
+        color: "var(--ink-2)",
+        minWidth: 60,
+        textAlign: "center",
+        fontWeight: 500,
       }}>
-        <thead>
-          <tr style={{ textAlign: "left", color: "var(--ink-3)", fontSize: 10.5, letterSpacing: ".06em", textTransform: "uppercase" }}>
-            <th style={th}>Risk</th>
-            <th style={th}>Bed</th>
-            <th style={th}>Patient</th>
-            {/* <th style={th}>Primary</th> */}
-            <th style={th}>Active flags</th>
-            <th style={th}>HR</th>
-            <th style={th}>MAP</th>
-            <th style={th}>SpO₂</th>
-            <th style={th}>RR</th>
-            <th style={th}>Agents</th>
-            <th style={{ ...th, textAlign: "right" }}>Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-          {patients.map((p, i) => (
-            <tr key={p.patient_id} onClick={() => onOpen(p)}
-              style={{
-                cursor: "pointer",
-                background: i % 2 === 0 ? "var(--surface-1)" : "var(--surface-2)",
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = "var(--surface-hover)"}
-              onMouseOut={(e) => e.currentTarget.style.background = i % 2 === 0 ? "var(--surface-1)" : "var(--surface-2)"}>
-              <td style={{ ...td, borderLeft: `4px solid var(--risk-${riskVar(p.risk_level)}-fg)`, paddingLeft: 12, width: 92 }}>
-                <RiskPill risk_level={p.risk_level} score={p.risk_score} delta={p.risk_delta} />
-              </td>
-              <td style={{ ...td, fontFamily: "var(--mono)", color: "var(--ink-2)", width: 76 }}>{p.careunit_short}</td>
-              <td style={td}>
-                <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.25 }}>
-                  <span style={{ fontWeight: 500, fontFamily: "var(--mono)" }}>#{p.patient_id}</span>
-                  <span style={{ fontSize: 10.5, color: "var(--ink-3)", fontFamily: "var(--mono)" }}>
-                    stay {p.stay_id} · {p.age}{p.gender} · {p.los}
-                  </span>
-                </div>
-              </td>
-              {/* <td style={{ ...td, color: "var(--ink-2)" }}>{p.primary}</td> */}
-              <td style={td}>
-                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                  {p.flags.length === 0
-                    ? <span style={{ color: "var(--ink-4)", fontSize: 11 }}>—</span>
-                    : p.flags.map((f, i) => (
-                        <Chip key={i} tone={flagTone(f)} dot={flagTone(f) !== "neutral"}>{f}</Chip>
-                      ))}
-                </div>
-              </td>
-              <td style={tdMono}>{p.vitals.hr} <TrendArrow direction={p.trend.hr} /></td>
-              <td style={tdMono}>{p.vitals.map} <TrendArrow direction={p.trend.map} /></td>
-              <td style={tdMono}>{p.vitals.spo2}<span style={{ color: "var(--ink-4)" }}>%</span></td>
-              <td style={tdMono}>{p.vitals.rr}</td>
-              <td style={td}>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <AgentBadge kind="trend" count={p.agent_counts.trend} />
-                  <AgentBadge kind="conflict" count={p.agent_counts.conflict} />
-                  <AgentBadge kind="timebomb" count={p.agent_counts.timebomb} />
-                </div>
-              </td>
-              <td style={{ ...td, textAlign: "right", color: "var(--ink-3)", fontFamily: "var(--mono)", fontSize: 10.5 }}>{p.last_updated_label}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        Page {pageInfo}
+      </span>
+      
+      <button
+        onClick={onNext}
+        disabled={!onNext}
+        style={{
+          ...btnGhost,
+          padding: "6px 8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: onNext ? 1 : 0.4,
+          cursor: onNext ? "pointer" : "not-allowed",
+        }}
+        aria-label="Next page"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
     </div>
   );
 }
 
-// ── Variant B: Card Grid ────────────────────────────────────────────────────
 function PatientCards({ patients, onOpen }: SubComponentProps) {
   return (
     <div className="patient-card-grid" style={{
@@ -213,8 +286,7 @@ function PatientCards({ patients, onOpen }: SubComponentProps) {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
             <div>
               <div style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>{p.careunit_short} · {p.age}{p.gender}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, fontFamily: "var(--mono)" }}>subject_id {p.patient_id}</div>
-              {/* <div style={{ fontSize: 11, color: "var(--ink-2)", marginTop: 1 }}>{p.primary}</div> */}
+              <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, fontFamily: "var(--mono)" }}>Patient ID {p.patient_id}</div>
             </div>
             <RiskPill risk_level={p.risk_level} score={p.risk_score} delta={p.risk_delta} />
           </div>
@@ -227,16 +299,54 @@ function PatientCards({ patients, onOpen }: SubComponentProps) {
                 ))}
           </div>
 
-          <div className="patient-card-vitals" style={{ display: "flex", gap: 14, paddingTop: 10, borderTop: "1px dashed var(--rule)" }}>
+          <div className="patient-card-vitals" style={{ 
+            display: "flex", 
+            alignItems: "center",
+            gap: 14, 
+            paddingTop: 10, 
+            borderTop: "1px dashed var(--rule)" 
+          }}>
+            {/* Vitals Section */}
             <VitalCell label="HR" value={p.vitals.hr} unit="bpm" direction={p.trend.hr} />
             <VitalCell label="MAP" value={p.vitals.map} unit="mmHg" direction={p.trend.map} />
             <VitalCell label="SpO₂" value={p.vitals.spo2} unit="%" direction={p.trend.spo2} />
             <VitalCell label="RR" value={p.vitals.rr} unit="/m" />
+
+            {/* Spacer to push metadata to the right */}
             <div style={{ flex: 1 }} />
-            <div style={{ display: "flex", gap: 4, alignSelf: "flex-end" }}>
-              <AgentBadge kind="trend" count={p.agent_counts.trend} />
-              <AgentBadge kind="conflict" count={p.agent_counts.conflict} />
-              <AgentBadge kind="timebomb" count={p.agent_counts.timebomb} />
+
+            {/* Metadata Group: Badges and Timestamp */}
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "flex-end", 
+              gap: 4 
+            }}>
+              {/* Agent Badges */}
+              <div style={{ display: "flex", gap: 4 }}>
+                <AgentBadge kind="trend" count={p.agent_counts.trend} />
+                <AgentBadge kind="conflict" count={p.agent_counts.conflict} />
+                <AgentBadge kind="timebomb" count={p.agent_counts.timebomb} />
+              </div>
+
+              {/* Timestamp Group */}
+              <div style={{ display: "flex", gap: 4, alignItems: "baseline" }}>
+                <span style={{ 
+                  fontSize: 9, 
+                  color: "var(--ink-4)", 
+                  textTransform: "uppercase", 
+                  letterSpacing: ".06em" 
+                }}>
+                  Updated
+                </span>
+                <span style={{ 
+                  fontFamily: "var(--mono)", 
+                  fontSize: 10, 
+                  color: "var(--ink-3)" 
+                }}>
+                  {p.last_updated_label}
+                </span>
+              </div>
             </div>
           </div>
         </button>
@@ -245,73 +355,90 @@ function PatientCards({ patients, onOpen }: SubComponentProps) {
   );
 }
 
-// ── Variant C: Risk lanes (kanban-ish) ──────────────────────────────────────
-function PatientLanes({ patients, onOpen }: SubComponentProps) {
-  const lanes: { key: RiskLevel; label: string; sub: string }[] = [
-    { key: "red",    label: "Critical (red)",   sub: "Active escalation" },
-    { key: "yellow", label: "Watch (yellow)",   sub: "Trending or unsettled" },
-    { key: "green",  label: "Stable (green)",   sub: "Routine surveillance" },
-  ];
-  return (
-    <div className="patient-lanes" style={{ padding: 16, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, alignItems: "start" }}>
-      {lanes.map((lane) => {
-        const list = patients.filter((p) => p.risk_level === lane.key);
-        const v = riskVar(lane.key);
-        return (
-          <div key={lane.key} style={{
-            background: `color-mix(in oklch, var(--risk-${v}-fg) 5%, var(--surface-2))`,
-            border: `1px solid color-mix(in oklch, var(--risk-${v}-fg) 18%, var(--rule))`,
-            borderRadius: 12, padding: 12,
-          }}>
-            <div style={{
-              display: "flex", alignItems: "baseline", justifyContent: "space-between",
-              padding: "2px 4px 10px", borderBottom: `1px dashed color-mix(in oklch, var(--risk-${v}-fg) 25%, transparent)`,
-              marginBottom: 10,
-            }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: `var(--risk-${v}-fg)` }}>{lane.label}</div>
-                <div style={{ fontSize: 10.5, color: "var(--ink-3)", marginTop: 1 }}>{lane.sub}</div>
-              </div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-2)" }}>{list.length}</div>
-            </div>
+interface StatStripProps {
+  patients: PatientSummary[];
+  riskFilter: RiskLevel | "all";
+  onRiskFilterChange: (filter: RiskLevel | "all") => void;
+}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {list.map((p) => (
-                <button key={p.patient_id} onClick={() => onOpen(p)} style={{
-                  all: "unset", cursor: "pointer", display: "block",
-                  background: "var(--surface-1)", border: "1px solid var(--rule)",
-                  borderRadius: 8, padding: "10px 12px",
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, fontFamily: "var(--mono)" }}>#{p.patient_id}</div>
-                    <RiskPill risk_level={p.risk_level} score={p.risk_score} delta={p.risk_delta} />
-                  </div>
-                  <div style={{ fontSize: 10.5, color: "var(--ink-3)", fontFamily: "var(--mono)", margin: "2px 0 6px" }}>
-                    {p.careunit_short} · {p.age}{p.gender} · {p.los}
-                  </div>
-                  {/* <div style={{ fontSize: 11, color: "var(--ink-2)", marginBottom: 8 }}>{p.primary}</div> */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-                    {p.flags.slice(0, 3).map((f, i) => (
-                      <Chip key={i} tone={flagTone(f)} dot={flagTone(f) !== "neutral"}>{f}</Chip>
-                    ))}
-                  </div>
-                  <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <span style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--ink-3)" }}>
-                      HR {p.vitals.hr} · MAP {p.vitals.map} · SpO₂ {p.vitals.spo2}%
-                    </span>
-                    <div style={{ flex: 1 }} />
-                    <div style={{ display: "flex", gap: 3 }}>
-                      <AgentBadge kind="trend" count={p.agent_counts.trend} />
-                      <AgentBadge kind="conflict" count={p.agent_counts.conflict} />
-                      <AgentBadge kind="timebomb" count={p.agent_counts.timebomb} />
-                    </div>
-                  </div>
-                </button>
-              ))}
-              {list.length === 0 && (
-                <div style={{ fontSize: 11, color: "var(--ink-4)", padding: "12px 6px", textAlign: "center" }}>—</div>
-              )}
-            </div>
+function StatStrip({ patients, riskFilter, onRiskFilterChange }: StatStripProps) {
+  const red    = patients.filter((p) => p.risk_level === "red").length;
+  const yellow = patients.filter((p) => p.risk_level === "yellow").length;
+  const green  = patients.filter((p) => p.risk_level === "green").length;
+  const flags = patients.reduce((s, p) => s + p.flags.length, 0);
+  
+  const stats: {
+    k: string;
+    v: number | string;
+    sub: string;
+    tone?: "red" | "amber" | "green";
+    clickable?: boolean;
+    filterValue?: RiskLevel | "all";
+  }[] = [
+    { k: "Critical",  v: red,    sub: "high risk",   tone: "red", clickable: true, filterValue: "red" },
+    { k: "Watch",     v: yellow, sub: "moderate",    tone: "amber", clickable: true, filterValue: "yellow" },
+    { k: "Stable",    v: green,  sub: "low risk",    tone: "green", clickable: true, filterValue: "green" },
+    { k: "Census",    v: patients.length, sub: "active beds" },
+    { k: "Open flags",v: flags,  sub: "across cohort" },
+  ];
+  
+  return (
+    <div className="dashboard-stat-strip" style={{
+      display: "grid", gridTemplateColumns: `repeat(${stats.length}, 1fr)`,
+      borderBottom: "1px solid var(--rule)", background: "var(--surface-2)",
+    }}>
+      {stats.map((s, i) => {
+        const isActive = s.filterValue && riskFilter === s.filterValue;
+        const isClickable = s.clickable;
+        
+        return (
+          <div
+            key={i}
+            onClick={() => {
+              if (isClickable && s.filterValue) {
+                // Toggle filter: if already active, reset to "all"
+                onRiskFilterChange(isActive ? "all" : s.filterValue);
+              }
+            }}
+            style={{
+              padding: "10px 16px",
+              borderRight: i < stats.length - 1 ? "1px solid var(--rule-soft)" : "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              cursor: isClickable ? "pointer" : "default",
+              background: isActive ? "var(--surface-1)" : "transparent",
+              borderTop: isActive ? `2px solid var(--risk-${riskVar(s.filterValue as RiskLevel)}-fg)` : "2px solid transparent",
+              transition: "all 0.2s ease",
+              position: "relative",
+            }}
+            onMouseEnter={(e) => {
+              if (isClickable && !isActive) {
+                e.currentTarget.style.background = "var(--surface-1)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (isClickable && !isActive) {
+                e.currentTarget.style.background = "transparent";
+              }
+            }}
+          >
+            <span style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>
+              {s.k}
+            </span>
+            <span style={{
+              fontFamily: "var(--mono)", fontSize: 18, fontWeight: 500,
+              color: s.tone === "red" ? "var(--risk-high-fg)"
+                   : s.tone === "amber" ? "var(--risk-med-fg)"
+                   : s.tone === "green" ? "var(--risk-low-fg)"
+                   : "var(--ink-1)",
+            }}>
+              {s.v}
+            </span>
+            <span style={{ fontSize: 10.5, color: "var(--ink-3)" }}>
+              {s.sub}
+              {isClickable && <span style={{ marginLeft: 4, opacity: 0.5 }}>↓</span>}
+            </span>
           </div>
         );
       })}
@@ -319,77 +446,94 @@ function PatientLanes({ patients, onOpen }: SubComponentProps) {
   );
 }
 
-function StatStrip({ patients }: { patients: PatientSummary[] }) {
-  const red    = patients.filter((p) => p.risk_level === "red").length;
-  const yellow = patients.filter((p) => p.risk_level === "yellow").length;
-  const green  = patients.filter((p) => p.risk_level === "green").length;
-  const flags = patients.reduce((s, p) => s + p.flags.length, 0);
-  const stats: { k: string; v: number | string; sub: string; tone?: "red" | "amber" | "green" }[] = [
-    { k: "Census",    v: patients.length, sub: "active beds" },
-    { k: "Red",       v: red,    sub: "critical",    tone: "red" },
-    { k: "Yellow",    v: yellow, sub: "watch",       tone: "amber" },
-    { k: "Green",     v: green,  sub: "stable",      tone: "green" },
-    { k: "Open flags",v: flags,  sub: "across cohort" },
-    { k: "Agent runs / hr", v: 142, sub: "p50 4.2s" },
-  ];
-  return (
-    <div className="dashboard-stat-strip" style={{
-      display: "grid", gridTemplateColumns: `repeat(${stats.length}, 1fr)`,
-      borderBottom: "1px solid var(--rule)", background: "var(--surface-2)",
-    }}>
-      {stats.map((s, i) => (
-        <div key={i} style={{
-          padding: "10px 16px", borderRight: i < stats.length - 1 ? "1px solid var(--rule-soft)" : "none",
-          display: "flex", flexDirection: "column", gap: 2,
-        }}>
-          <span style={{ fontSize: 10, color: "var(--ink-3)", letterSpacing: ".06em", textTransform: "uppercase" }}>{s.k}</span>
-          <span style={{
-            fontFamily: "var(--mono)", fontSize: 18, fontWeight: 500,
-            color: s.tone === "red" ? "var(--risk-high-fg)"
-                 : s.tone === "amber" ? "var(--risk-med-fg)"
-                 : s.tone === "green" ? "var(--risk-low-fg)"
-                 : "var(--ink-1)",
-          }}>{s.v}</span>
-          <span style={{ fontSize: 10.5, color: "var(--ink-3)" }}>{s.sub}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 interface DashboardProps {
   patients: PatientSummary[];
   onOpen: (patient: PatientSummary) => void;
-  variant: string;
-  setVariant: (variant: string) => void;
   density?: string;
 }
 
-function Dashboard({ patients, onOpen, variant, setVariant, density }: DashboardProps) {
+function Dashboard({ patients, onOpen, density }: DashboardProps) {
+  const { width, height } = useViewport();
+
+  const CARD_MIN_WIDTH = 320;
+  const GRID_GAP = 12;
+  const HORIZONTAL_PADDING = 40; // approx (20 left + 20 right)
+
+  const HEADER_HEIGHT = 60;
+  const STAT_HEIGHT = 60;
+  const PAGINATION_HEIGHT = 60;
+  const VERTICAL_PADDING = 40;
+
+  const availableWidth = width - HORIZONTAL_PADDING;
+  const columns = Math.max(1, Math.floor(availableWidth / (CARD_MIN_WIDTH + GRID_GAP)));
+
+  const availableHeight =
+    height - HEADER_HEIGHT - STAT_HEIGHT - PAGINATION_HEIGHT - VERTICAL_PADDING;
+
+  // Approximate card height (you can tweak this)
+  const CARD_HEIGHT = 180;
+
+  const rows = Math.max(1, Math.floor(availableHeight / (CARD_HEIGHT + GRID_GAP)));
+
+  const pageSize = columns * rows;
+
   const [unit, setUnit] = React.useState("All Units");
+  const [currentPage, setCurrentPage] = React.useState(0);
+  const [riskFilter, setRiskFilter] = React.useState<RiskLevel | "all">("all");
   
-  // Filter patients based on selected unit
-  const filteredPatients = React.useMemo(() => {
-    if (unit === "All Units") return patients;
-    
-    // Match unit filter with careunit_short (e.g., "MICU", "SICU")
-    return patients.filter(p => {
-      const unitShort = p.careunit_short?.toUpperCase() || '';
-      return unitShort.includes(unit.toUpperCase());
-    });
-  }, [patients, unit]);
+  // Settings: How many patients to show per page
   
+  // Filter by unit first
+  let filteredPatients = patients.filter(p => unit === "All Units" || p.careunit_short === unit);
+  
+  // Then filter by risk level if a filter is active
+  if (riskFilter !== "all") {
+    filteredPatients = filteredPatients.filter(p => p.risk_level === riskFilter);
+  }
+  
+  // Pagination for cards view
+  const pageCount = Math.ceil(filteredPatients.length / pageSize);
+  
+  // The specific slice of patients for the current page
+  const visiblePatients = filteredPatients.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+  const handleNext = () => setCurrentPage((p) => Math.min(p + 1, pageCount - 1));
+  const handlePrev = () => setCurrentPage((p) => Math.max(p - 1, 0));
+
+  // Reset page when unit or risk filter changes to avoid empty screens
+  React.useEffect(() => { setCurrentPage(0); }, [unit, riskFilter]);
+
+  // Get unfiltered patients for the current unit to show accurate stats
+  const unitPatients = patients.filter(p => unit === "All Units" || p.careunit_short === unit);
+
   return (
     <div className="dashboard-shell" style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--surface-0)" }}>
-      <Header unit={unit} setUnit={setUnit} refresh={true} density={density} variant={variant} setVariant={setVariant} total={filteredPatients.length} />
-      <StatStrip patients={filteredPatients} />
+      <Header
+        unit={unit}
+        setUnit={setUnit}
+        refresh={true}
+        density={density}
+      />
+      
+      <StatStrip
+        patients={unitPatients}
+        riskFilter={riskFilter}
+        onRiskFilterChange={setRiskFilter}
+      />
+
       <div style={{ flex: 1, overflow: "auto" }}>
-        {variant === "table" && <PatientTable patients={filteredPatients} onOpen={onOpen} />}
-        {variant === "cards" && <PatientCards patients={filteredPatients} onOpen={onOpen} />}
-        {variant === "lanes" && <PatientLanes patients={filteredPatients} onOpen={onOpen} />}
+        <PatientCards patients={visiblePatients} onOpen={onOpen} />
       </div>
+      
+      <PaginationControls
+        onPrev={currentPage > 0 ? handlePrev : undefined}
+        onNext={currentPage < pageCount - 1 ? handleNext : undefined}
+        pageInfo={`${currentPage + 1} / ${pageCount || 1}`}
+      />
     </div>
   );
 }
 
 export default Dashboard;
+
+// Made with Bob

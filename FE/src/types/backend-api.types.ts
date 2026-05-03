@@ -45,10 +45,32 @@ export interface PatientBriefResponse {
   confidence_level: number;
   generated_by: string;
   
+  // Patient demographics
+  age?: number;
+  gender?: string;
+  careunit?: string;
+  
   // Full detailed reports (not just summaries)
   trend_report?: TrendReportAPI;
   conflict_report?: ConflictReportAPI;
   timebomb_report?: TimeBombReportAPI;
+  
+  // Timeline of recent events
+  timeline?: Array<{
+    t: string;
+    kind: string;
+    text: string;
+  }>;
+  
+  // Data quality metrics
+  data_quality?: {
+    total_expected_readings: number;
+    actual_readings: number;
+    missing_vitals: string[];
+    missing_labs: string[];
+    data_gaps_minutes: number[];
+    completeness_score: number;
+  };
 }
 
 // Nested report types matching backend schemas

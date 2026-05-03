@@ -13,8 +13,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+BE/lib/
+BE/lib64/
 parts/
 sdist/
 var/
@@ -70,5 +70,3 @@ dmypy.json
 # OS
 Thumbs.db
 .DS_Store
-BE/src/data/raw_data/master_multi_patient_timeline.csv
-BE/src/data/raw_data/master_patient_timeline.csv

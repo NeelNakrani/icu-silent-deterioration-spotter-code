@@ -29,10 +29,29 @@ function transformPatientListItem(item: BackendPatientListItem): PatientSummary 
                           diffMinutes < 1440 ? `${Math.floor(diffMinutes / 60)}h ago` :
                           `${Math.floor(diffMinutes / 1440)}d ago`;
 
-  // Shorten care unit name
-  const careunitShort = item.careunit.replace(/^(Medical|Surgical|Cardiac|Neuro|Trauma)\s+ICU$/i, (_, type) => 
-    type.substring(0, 3).toUpperCase()
-  );
+  // Shorten care unit name - handle full names like "Medical Intensive Care Unit"
+  let careunitShort = item.careunit;
+  
+  // Map full ICU names to abbreviations
+  if (/Medical\s+Intensive\s+Care\s+Unit/i.test(item.careunit)) {
+    careunitShort = 'MICU';
+  } else if (/Surgical\s+Intensive\s+Care\s+Unit/i.test(item.careunit)) {
+    careunitShort = 'SICU';
+  } else if (/Cardiac\s+(Vascular\s+)?Intensive\s+Care\s+Unit/i.test(item.careunit)) {
+    careunitShort = 'CICU';
+  } else if (/Neuro\s+Intermediate/i.test(item.careunit)) {
+    careunitShort = 'NICU';
+  } else if (/Trauma\s+SICU/i.test(item.careunit)) {
+    careunitShort = 'TSICU';
+  } else if (/Coronary\s+Care\s+Unit/i.test(item.careunit)) {
+    careunitShort = 'CCU';
+  } else {
+    // Fallback: try to extract first word + ICU
+    const match = item.careunit.match(/^(\w+)/);
+    if (match) {
+      careunitShort = match[1].substring(0, 3).toUpperCase() + 'ICU';
+    }
+  }
 
   return {
     patient_id: item.patient_id,
@@ -48,7 +67,7 @@ function transformPatientListItem(item: BackendPatientListItem): PatientSummary 
     gender: item.gender,
     primary: 'Unknown', // Not provided by backend
     los: '0d', // Not provided by backend
-    flags: [], // Not provided by backend
+    flags: (item as any).flags || [], // Get flags from backend if available
     vitals: item.vitals ? {
       hr: Math.round(item.vitals.hr),
       sbp: Math.round(item.vitals.sbp),
@@ -194,11 +213,21 @@ function transformPatientBrief(brief: PatientBriefResponse): PatientDetailData {
     assessment: brief.assessment,
     recommendation: brief.recommendation,
     
-    // Patient demographics (defaults, not provided by backend)
-    careunit: 'Unknown',
-    careunit_short: 'UNK',
-    age: 0,
-    gender: 'U',
+    // Patient demographics from backend
+    careunit: brief.careunit || 'Unknown',
+    careunit_short: brief.careunit ? (() => {
+      // Map full ICU names to abbreviations
+      if (/Medical\s+Intensive\s+Care\s+Unit/i.test(brief.careunit)) return 'MICU';
+      if (/Surgical\s+Intensive\s+Care\s+Unit/i.test(brief.careunit)) return 'SICU';
+      if (/Cardiac\s+(Vascular\s+)?Intensive\s+Care\s+Unit/i.test(brief.careunit)) return 'CICU';
+      if (/Neuro\s+Intermediate/i.test(brief.careunit)) return 'NICU';
+      if (/Trauma\s+SICU/i.test(brief.careunit)) return 'TSICU';
+      if (/Coronary\s+Care\s+Unit/i.test(brief.careunit)) return 'CCU';
+      const match = brief.careunit.match(/^(\w+)/);
+      return match ? match[1].substring(0, 3).toUpperCase() + 'ICU' : 'UNK';
+    })() : 'UNK',
+    age: brief.age || 0,
+    gender: brief.gender || 'U',
     weight: 'Unknown',
     attending: 'Unknown',
     display_name: `Patient ${brief.patient_id}`,
@@ -309,8 +338,15 @@ function transformPatientBrief(brief: PatientBriefResponse): PatientDetailData {
       timebombs: [],
     },
     
-    // Data quality (defaults)
-    data_quality: {
+    // Data quality from backend
+    data_quality: brief.data_quality ? {
+      total_expected_readings: brief.data_quality.total_expected_readings,
+      actual_readings: brief.data_quality.actual_readings,
+      missing_vitals: brief.data_quality.missing_vitals || [],
+      missing_labs: brief.data_quality.missing_labs || [],
+      data_gaps_minutes: brief.data_quality.data_gaps_minutes || [],
+      completeness_score: brief.data_quality.completeness_score,
+    } : {
       total_expected_readings: 0,
       actual_readings: 0,
       missing_vitals: [],
@@ -319,8 +355,12 @@ function transformPatientBrief(brief: PatientBriefResponse): PatientDetailData {
       completeness_score: brief.data_quality_score,
     },
     
-    // Timeline (empty for now)
-    timeline: [],
+    // Timeline from backend - cast to proper type
+    timeline: (brief.timeline || []).map(item => ({
+      t: item.t,
+      kind: item.kind as 'agent' | 'med' | 'note' | 'lab' | 'vital' | 'order',
+      text: item.text
+    })),
   };
 }
 

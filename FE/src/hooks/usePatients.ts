@@ -14,5 +14,6 @@ export function usePatientDetail(patientId: string | null) {
     queryKey: ['patient', patientId],
     queryFn: () => patientService.getPatientDetail(patientId!),
     enabled: !!patientId,
+    refetchInterval: 60000, // Auto-refresh every minute per spec
   });
 }

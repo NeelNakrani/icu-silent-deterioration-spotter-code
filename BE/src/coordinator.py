@@ -322,7 +322,108 @@ def generate_recommendation(
     return "\n".join(recommendations)
 
 
-async def coordinate(patient_data: PatientDataObject) -> SBARBrief:
+def generate_timeline(patient_data: PatientDataObject, trend_report: TrendReport,
+                     conflict_report: ConflictReport, timebomb_report: TimeBombReport,
+                     current_risk_level: Optional[RiskLevel] = None, previous_risk_level: Optional[RiskLevel] = None):
+    """
+    Generate timeline of recent events from patient data and agent reports.
+    
+    Args:
+        patient_data: Patient data object
+        trend_report: Trend analysis report
+        conflict_report: Conflict detection report
+        timebomb_report: Time bomb detection report
+        current_risk_level: Current calculated risk level
+        previous_risk_level: Previous risk level (if available)
+        
+    Returns:
+        List of timeline items with timestamp, kind, and text
+    """
+    timeline = []
+    
+    # Add state change if risk level changed
+    if current_risk_level and previous_risk_level and current_risk_level != previous_risk_level:
+        state_emoji = {
+            RiskLevel.GREEN: "🟢",
+            RiskLevel.YELLOW: "🟡",
+            RiskLevel.RED: "🔴"
+        }
+        state_text = {
+            RiskLevel.GREEN: "Stable",
+            RiskLevel.YELLOW: "Warning",
+            RiskLevel.RED: "Critical"
+        }
+        
+        timeline.append({
+            't': datetime.now().strftime('%H:%M'),
+            'kind': 'state_change',
+            'text': f"Patient state changed to {state_text[current_risk_level]} {state_emoji[current_risk_level]}",
+            'from_state': previous_risk_level.value,
+            'to_state': current_risk_level.value
+        })
+    
+    # Add agent findings
+    if trend_report and trend_report.trends:
+        for trend in trend_report.trends[:3]:  # Top 3 trends
+            timeline.append({
+                't': trend_report.timestamp.strftime('%H:%M') if hasattr(trend_report.timestamp, 'strftime') else '00:00',
+                'kind': 'agent',
+                'text': f"Trend Agent: {trend.vital_name} {trend.direction.value}"
+            })
+    
+    if conflict_report and conflict_report.conflicts:
+        for conflict in conflict_report.conflicts[:2]:  # Top 2 conflicts
+            timeline.append({
+                't': conflict_report.timestamp.strftime('%H:%M') if hasattr(conflict_report.timestamp, 'strftime') else '00:00',
+                'kind': 'agent',
+                'text': f"Conflict Agent: {conflict.conflict_type.value.replace('_', ' ').title()}"
+            })
+    
+    if timebomb_report and timebomb_report.timebombs:
+        for tb in timebomb_report.timebombs[:2]:  # Top 2 timebombs
+            timeline.append({
+                't': timebomb_report.timestamp.strftime('%H:%M') if hasattr(timebomb_report.timestamp, 'strftime') else '00:00',
+                'kind': 'agent',
+                'text': f"TimeBomb Agent: {tb.timebomb_type.value.replace('_', ' ').title()}"
+            })
+    
+    # Add recent vitals (last 5)
+    if patient_data.vitals:
+        recent_vitals = sorted(patient_data.vitals, key=lambda v: v.charttime, reverse=True)[:5]
+        for vital in recent_vitals:
+            timeline.append({
+                't': vital.charttime.strftime('%H:%M'),
+                'kind': 'vital',
+                'text': f"{vital.label}: {vital.value:.1f} {vital.unit}"
+            })
+    
+    # Add recent labs (last 3)
+    if patient_data.labs:
+        recent_labs = sorted(patient_data.labs, key=lambda l: l.charttime, reverse=True)[:3]
+        for lab in recent_labs:
+            flag_text = f" [{lab.flag}]" if lab.flag else ""
+            timeline.append({
+                't': lab.charttime.strftime('%H:%M'),
+                'kind': 'lab',
+                'text': f"{lab.label}: {lab.value:.1f} {lab.unit}{flag_text}"
+            })
+    
+    # Add recent medications (last 3)
+    if patient_data.medications:
+        recent_meds = sorted(patient_data.medications, key=lambda m: m.starttime, reverse=True)[:3]
+        for med in recent_meds:
+            timeline.append({
+                't': med.starttime.strftime('%H:%M'),
+                'kind': 'med',
+                'text': f"{med.drug} {med.dose or ''} {med.route or ''}".strip()
+            })
+    
+    # Sort by time (most recent first) and limit to 15 items
+    timeline.sort(key=lambda x: x['t'], reverse=True)
+    return timeline[:15]
+
+
+async def coordinate(patient_data: PatientDataObject, previous_risk_level: Optional[RiskLevel] = None) -> SBARBrief:
     """
     Main coordinator function that orchestrates all agents and generates SBAR brief.
     
@@ -330,6 +431,7 @@ async def coordinate(patient_data: PatientDataObject) -> SBARBrief:
     
     Args:
         patient_data: PatientDataObject containing patient data
+        previous_risk_level: Previous risk level for state change tracking (optional)
         
     Returns:
         SBARBrief with complete clinical assessment
@@ -350,6 +452,10 @@ async def coordinate(patient_data: PatientDataObject) -> SBARBrief:
     assessment = generate_assessment(conflict_report, trend_report, risk_level)
     recommendation = generate_recommendation(conflict_report, timebomb_report, risk_level)
     
+    # Generate timeline (pass current and previous risk levels for state tracking)
+    timeline = generate_timeline(patient_data, trend_report, conflict_report, timebomb_report,
+                                current_risk_level=risk_level, previous_risk_level=previous_risk_level)
+    
     # Calculate confidence level based on data quality
     confidence_level = patient_data.data_quality.completeness_score if patient_data.data_quality else 0.0
     
@@ -367,6 +473,7 @@ async def coordinate(patient_data: PatientDataObject) -> SBARBrief:
         trend_report=trend_report,
         conflict_report=conflict_report,
         timebomb_report=timebomb_report,
+        timeline=timeline,
         data_quality_score=confidence_level,
         confidence_level=confidence_level,
         generated_by="Bob Agent System v1.0"

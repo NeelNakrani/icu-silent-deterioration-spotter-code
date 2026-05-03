@@ -16,7 +16,7 @@ export function LevelBadge({ level, kind = "concern", color }: LevelBadgeProps) 
   return (
     <span style={{
       fontFamily: "var(--mono)", fontSize: 10, fontWeight: 600,
-      padding: "2px 7px", borderRadius: 999,
+      padding: "2px 7px", borderRadius: "var(--rounded-full)",
       color: color, border: `1px solid ${color}`, background: "transparent",
       textTransform: "uppercase", letterSpacing: ".04em",
     }}>L{level} · {txt}</span>
