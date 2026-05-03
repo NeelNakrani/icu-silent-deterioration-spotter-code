@@ -3,6 +3,8 @@ import type { PatientDetailData, TimelineItem, TrendReport, ConflictReport, Time
 import { Sparkline, RiskPill, Chip, TrendArrow, LevelBadge } from '../../components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Switch } from '../../components/ui/switch';
+import { Button } from '../../components/ui/button';
+import { apiService } from '../../services/api.service';
 
 // Screen 2: SBAR+ Brief detail panel — aligned to api-spec SBARBrief schema.
 
@@ -11,7 +13,44 @@ interface SbarCardProps {
 }
 
 function SbarCard({ p }: SbarCardProps) {
+  const [aiInsight, setAiInsight] = React.useState<string>('');
+  const [isGeneratingAI, setIsGeneratingAI] = React.useState(false);
+  const [aiError, setAiError] = React.useState<string>('');
+  
   if (!p) return null;
+  
+  // Check if patient has AI insight from trend report
+  React.useEffect(() => {
+    if (p.trend_report?.llm_reasoning) {
+      setAiInsight(p.trend_report.llm_reasoning);
+    }
+  }, [p.trend_report?.llm_reasoning]);
+  
+  const isCritical = p.risk_level === 'red';
+  
+  const handleGenerateAIInsight = async () => {
+    setIsGeneratingAI(true);
+    setAiError('');
+    
+    try {
+      const response = await apiService.post<{
+        patient_id: string;
+        ai_insight: string;
+        risk_level: string;
+        timestamp: string;
+        generated_by: string;
+      }>(`/patients/${p.patient_id}/ai-insight`);
+      
+      if (response.data.ai_insight) {
+        setAiInsight(response.data.ai_insight);
+      }
+    } catch (error: any) {
+      console.error('Error generating AI insight:', error);
+      setAiError(error.message || 'Failed to generate AI insight');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
   
   const items = [
     { k: "S", label: "Situation",      txt: p.situation || '—' },
@@ -19,6 +58,7 @@ function SbarCard({ p }: SbarCardProps) {
     { k: "A", label: "Assessment",     txt: p.assessment || '—' },
     { k: "R", label: "Recommendation", txt: p.recommendation || '—' },
   ];
+  
   return (
     <div className="sbar-card" style={{
       background: "var(--surface-1)", border: "1px solid var(--rule)",
@@ -59,6 +99,149 @@ function SbarCard({ p }: SbarCardProps) {
           </div>
         ))}
       </div>
+
+      {/* AI Insight Section - Only for Critical Patients */}
+      {isCritical && (
+        <div style={{
+          marginTop: 14,
+          paddingTop: 14,
+          borderTop: "1px solid var(--rule-soft)",
+        }}>
+          <div style={{
+            padding: 12,
+            borderRadius: 8,
+            background: "color-mix(in oklch, var(--risk-high-fg) 8%, transparent)",
+            border: "1px solid color-mix(in oklch, var(--risk-high-fg) 25%, transparent)",
+          }}>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 8,
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}>
+                <span style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 99,
+                  background: "var(--risk-high-fg)",
+                }} />
+                <span style={{
+                  fontSize: 10.5,
+                  color: "var(--risk-high-fg)",
+                  letterSpacing: ".06em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                }}>
+                  AI Clinical Insight
+                </span>
+              </div>
+              {!aiInsight && (
+                <Button
+                  onClick={handleGenerateAIInsight}
+                  disabled={isGeneratingAI}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    height: "auto",
+                    background: "var(--surface-1)",
+                    border: "1px solid var(--risk-high-fg)",
+                    color: "var(--risk-high-fg)",
+                    borderRadius: 6,
+                  }}
+                >
+                  {isGeneratingAI ? (
+                    <>
+                      <span style={{
+                        display: "inline-block",
+                        width: 10,
+                        height: 10,
+                        border: "2px solid var(--risk-high-fg)",
+                        borderTopColor: "transparent",
+                        borderRadius: "50%",
+                        animation: "spin 0.6s linear infinite",
+                        marginRight: 6,
+                      }} />
+                      Generating...
+                    </>
+                  ) : (
+                    'Generate AI Insight'
+                  )}
+                </Button>
+              )}
+            </div>
+            
+            {aiInsight ? (
+              <div style={{
+                padding: 10,
+                background: "var(--surface-1)",
+                borderRadius: 6,
+                border: "1px solid var(--rule)",
+              }}>
+                <div style={{
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                  color: "var(--ink-1)",
+                  marginBottom: 6,
+                }}>
+                  <span style={{
+                    fontWeight: 600,
+                    color: "var(--risk-high-fg)",
+                  }}>
+                    IBM watsonx.ai:
+                  </span>{' '}
+                  {aiInsight}
+                </div>
+              </div>
+            ) : isGeneratingAI ? (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+                fontSize: 11.5,
+                color: "var(--ink-3)",
+              }}>
+                <span style={{
+                  display: "inline-block",
+                  width: 14,
+                  height: 14,
+                  border: "2px solid var(--ink-3)",
+                  borderTopColor: "transparent",
+                  borderRadius: "50%",
+                  animation: "spin 0.6s linear infinite",
+                  marginRight: 8,
+                }} />
+                Analyzing patient data...
+              </div>
+            ) : aiError ? (
+              <div style={{
+                padding: 10,
+                background: "var(--surface-1)",
+                borderRadius: 6,
+                border: "1px solid var(--rule)",
+                fontSize: 11.5,
+                color: "var(--risk-high-fg)",
+              }}>
+                ⚠️ {aiError}
+              </div>
+            ) : (
+              <div style={{
+                fontSize: 11.5,
+                color: "var(--ink-3)",
+                fontStyle: "italic",
+                padding: 8,
+              }}>
+                Click "Generate AI Insight" to get IBM watsonx.ai analysis for this critical patient.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Data quality + confidence footer (per spec) */}
       <div className="sbar-card-footer" style={{

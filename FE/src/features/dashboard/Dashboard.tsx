@@ -365,7 +365,6 @@ function StatStrip({ patients, riskFilter, onRiskFilterChange }: StatStripProps)
   const red    = patients.filter((p) => p.risk_level === "red").length;
   const yellow = patients.filter((p) => p.risk_level === "yellow").length;
   const green  = patients.filter((p) => p.risk_level === "green").length;
-  const flags = patients.reduce((s, p) => s + p.flags.length, 0);
   
   const stats: {
     k: string;
@@ -379,7 +378,6 @@ function StatStrip({ patients, riskFilter, onRiskFilterChange }: StatStripProps)
     { k: "Watch",     v: yellow, sub: "moderate",    tone: "amber", clickable: true, filterValue: "yellow" },
     { k: "Stable",    v: green,  sub: "low risk",    tone: "green", clickable: true, filterValue: "green" },
     { k: "Census",    v: patients.length, sub: "active beds" },
-    { k: "Open flags",v: flags,  sub: "across cohort" },
   ];
   
   return (
